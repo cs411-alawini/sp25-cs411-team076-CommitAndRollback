@@ -6,7 +6,7 @@
 | ----------- | ---------------------- |
 | TeamID      |  team076               |
 | TeamName    |  CommitAndRollback     |
-| Captain     |  Suarav Nayak          |
+| Captain     |  Saurav Nayak          |
 | Captain     |  sgnayak2@illinois.edu |
 | Member1     |  Anil Muthigi          |
 | Member1     |  muthigi2@illinois.edu |
