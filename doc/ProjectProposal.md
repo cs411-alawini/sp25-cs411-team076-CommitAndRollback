@@ -89,12 +89,14 @@ This application provides a seamless user experience with the following key feat
 ([Synapo - Figma Screens](https://www.kaggle.com/datasets/arindamsahoo/social-media-users))
 
 #### Login/Signup:
-- **Account Creation**: Users can create new accounts by providing essential information such as name, username, password, email, and location.  
+- **Account Creation**: Users can create new accounts by providing essential information such as name, username, password, email, and location.
 - **Login**: Existing users can easily log in to their accounts using their credentials.  
-- **Password Reset**: Users can conveniently reset their passwords if they forget them.  
+- **Password Reset**: Users can conveniently reset their passwords if they forget them.
+<img width="571" alt="Screenshot 2025-02-15 at 9 46 28 PM" src="https://github.com/user-attachments/assets/c1717e64-7bbc-4036-b15c-81d0c4ed83ef" />
 
 #### Onboarding:
 - **Interest Selection**: First-time users are guided through an onboarding process where they select their interests. This information is crucial for personalized recommendations and a tailored user experience.  
+<img width="274" alt="Screenshot 2025-02-15 at 9 46 58 PM" src="https://github.com/user-attachments/assets/f9229b42-3e9d-45ba-aba4-833af6ca7a14" />
 
 #### Key Screens:
 ##### Home Screen:
@@ -103,6 +105,7 @@ This application provides a seamless user experience with the following key feat
 - Includes a side menu bar with the following key functionalities:  
   - **Chat List**: Shows a list of chats, with unread chats clearly indicated.  
   - **AI Summarization**: For unread chats, an icon allows users to quickly summarize the conversation using AI, saving time and effort.  
+<img width="609" alt="Screenshot 2025-02-15 at 9 47 20 PM" src="https://github.com/user-attachments/assets/ce701f59-270e-4def-91b4-27796aa8799c" />
 
 ##### Add Friends Screen:
 - Users can easily search for and add new friends to their network.  
@@ -110,8 +113,7 @@ This application provides a seamless user experience with the following key feat
 ##### Profile Screen:
 - Allows users to edit their profile information, including name, bio, and profile picture.  
 - Allows users to update their interests and location for more accurate recommendations and connections.
-
-
+<img width="609" alt="Screenshot 2025-02-15 at 9 47 52 PM" src="https://github.com/user-attachments/assets/614f821b-0307-4de7-a3fb-5b29b5b4ca76" />
 
 
 ## Project Work Distribution
