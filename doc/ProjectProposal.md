@@ -68,7 +68,7 @@ We are planning to use data from the following 3 datasets in our application:
    - Data Size: This dataset includes 2,271 rows, representing unique user interactions across different digital platforms and 22 attributes. Each row contains multiple attributes that describe user engagement, platform preferences, and UI/UX design choices.
    - Information Captured: The dataset contains User Demographics, including name, age, and gender, which help in creating new users for our application and subsequent chat group recommendations. The dataset also records some UI/UX Elements, which describe preferences in digital design, including color schemes, typography, layout choices, and multimedia usage which will not be used for building our application.
 
-### Key Functionalities
+## Key Functionalities
 - **User Registration and Profiles**: Users can sign up using an email address or social media login. Profiles include personal details such as name, age, interests, hobbies, bio, and the like. Users can update, edit, or delete their profiles anytime.
 - **Friend & Group Recommendations**: Based on the interests added by the user during the profile creation step, the user will be recommended a set of friends and groups.
 - **Friend Requests and Connections**: Users can send, accept, or decline friend requests. A dedicated friend list allows users to manage their connections efficiently.
