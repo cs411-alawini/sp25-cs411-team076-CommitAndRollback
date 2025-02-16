@@ -86,7 +86,7 @@ We are planning to use data from the following 3 datasets in our application:
 ## Low Fidelity UI Mockup  
 This application provides a seamless user experience with the following key features:
 
-([Synapo - Figma Screens](https://www.kaggle.com/datasets/arindamsahoo/social-media-users))
+([Synapo - Figma Screens](https://www.figma.com/design/7co7TI24s4oOgipgwq6hbb/Synapo))
 
 #### Login/Signup:
 - **Account Creation**: Users can create new accounts by providing essential information such as name, username, password, email, and location.
