@@ -1,6 +1,6 @@
 # Project Proposal
 
-## Project Topic - Synapo 
+## Project Title - Synapo 
 _Synapo: A Smart Social Networking and Chat Platform_
 
 ## Project Summary
@@ -29,21 +29,21 @@ We will show trending groups in the user's region, prioritized by the number of 
 ## Usefulness
 Our application is useful because it provides a structured and efficient way for individuals to connect with like-minded people in a safe and user-friendly environment. Unlike traditional social media platforms that focus on maintaining existing relationships, our application is designed specifically for building new connections based on shared interests, location, and activities. Users can also benefit from our application as it facilitates meaningful friendships, efficient and personalized friend discovery, and seamless and real-time interaction.
 
-## Key Functionalities
+### Key Functionalities
 - **User Registration and Profiles**: Users can sign up using an email address or social media login. Profiles include personal details such as name, age, interests, hobbies, bio, and the like. Users can update, edit, or delete their profiles anytime.
 - **Friend & Group Recommendations**: Based on the interests added by the user during the profile creation step, the user will be recommended a set of friends and groups.
 - **Friend Requests and Connections**: Users can send, accept, or decline friend requests. A dedicated friend list allows users to manage their connections efficiently.
 - **Discovery & Search**: Users can search for friends based on location, shared interests, or specific keywords. A recommendation engine suggests potential friends based on user preferences and mutual interests. Filters allow users to refine searches by age, gender, activity type, and availability.
 - **Real-Time Messaging**: Users can send and receive direct messages within the app. Chat supports text, images, and links for better communication.
 
-## User Interaction Flow
+### User Interaction Flow
 1. A new user registers and sets up their profile with personal details, preferences, and interests.
 2. The user searches for potential friends using filters or explores recommendations.
 3. Users can send friend requests to others they find interesting.
 4. Once connected, they can engage in direct messaging or plan meetups/events.
 5. The platform continuously refines recommendations based on location, user activity, and changing interests.
 
-## Similar Websites/Applications and How We Are Different
+### Similar Websites/Applications and How We Are Different
 - **Facebook & Instagram**: These social media apps provide friend suggestions based on mutual connections. However, we provide friend recommendations based on common interests, hobbies, and thoughts. Facebook Groups facilitate large community discussions, while our application provides a more personalized and structured way to find individual friends and plan activities.
 - **Swipe-based Apps like Bumble**: Instead of requiring users to swipe through numerous profiles like traditional dating apps, our application offers smart recommendations based on mutual interests. This allows users to effortlessly discover like-minded individuals without investing excessive time, making the friend-finding process more efficient and enjoyable.
 
@@ -68,14 +68,14 @@ We are planning to use data from the following 3 datasets in our application:
    - Data Size: This dataset includes 2,271 rows, representing unique user interactions across different digital platforms and 22 attributes. Each row contains multiple attributes that describe user engagement, platform preferences, and UI/UX design choices.
    - Information Captured: The dataset contains User Demographics, including name, age, and gender, which help in creating new users for our application and subsequent chat group recommendations. The dataset also records some UI/UX Elements, which describe preferences in digital design, including color schemes, typography, layout choices, and multimedia usage which will not be used for building our application.
 
-## Key Functionalities
+### Key Functionalities
 - **User Registration and Profiles**: Users can sign up using an email address or social media login. Profiles include personal details such as name, age, interests, hobbies, bio, and the like. Users can update, edit, or delete their profiles anytime.
 - **Friend & Group Recommendations**: Based on the interests added by the user during the profile creation step, the user will be recommended a set of friends and groups.
 - **Friend Requests and Connections**: Users can send, accept, or decline friend requests. A dedicated friend list allows users to manage their connections efficiently.
 - **Discovery & Search**: Users can search for friends based on location, shared interests, or specific keywords. A recommendation engine suggests potential friends based on user preferences and mutual interests. Filters allow users to refine searches by age, gender, activity type, and availability.
 - **Real-Time Messaging**: Users can send and receive direct messages within the app. Chat supports text, images, and links for better communication.
 
-## User Interaction Flow
+### User Interaction Flow
 1. A new user registers and sets up their profile with personal details, preferences, and interests.
 2. The user searches for potential friends using filters or explores recommendations.
 3. Users can send friend requests to others they find interesting.
