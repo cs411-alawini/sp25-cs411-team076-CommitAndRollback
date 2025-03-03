@@ -249,3 +249,7 @@ Therefore, this schema is in **BCNF**:
 - Every table has a **primary key**.
 - No **non-superkey** determines another attribute.
 - All functional dependencies are accounted for.
+
+## C. Conceptual database design (ER/UML) to the logical design (relational schema)
+
+![image](https://github.com/user-attachments/assets/1f4e7353-9be6-4b5c-9732-d61f9f5e8d08)
