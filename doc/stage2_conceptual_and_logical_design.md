@@ -1,6 +1,5 @@
 ## UML Diagram
-
-Insert here
+![UML](https://github.com/user-attachments/assets/59b9909a-5b99-4eb7-ad32-1d38fb87dfa6)
 
 ## A. Assumptions for each entity and relationship in our model along with the cardinality of relationships.
 
