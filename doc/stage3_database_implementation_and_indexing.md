@@ -210,7 +210,31 @@ LIMIT
 
 ### Query 4
 ```sql
-SELECT   i.interest_id,   i.interest_name,   COUNT(DISTINCT g.group_id) AS group_count,   COUNT(DISTINCT gm.user_id) AS group_user_count,   COUNT(DISTINCT ui.user_id) AS individual_user_count,   (     COUNT(DISTINCT g.group_id) * 10 + COUNT(DISTINCT gm.user_id) * 5 + COUNT(DISTINCT ui.user_id) * 3   ) AS interest_weight FROM   Interests i   LEFT JOIN `Group` g ON i.interest_id = g.interest_id   LEFT JOIN Group_Members gm ON g.group_id = gm.group_id   LEFT JOIN User_Interests ui ON i.interest_id = ui.interest_id GROUP BY   i.interest_id,   i.interest_name ORDER BY   interest_weight DESC  LIMIT  15;
+SELECT
+    i.interest_id,   i.interest_name,
+    COUNT(DISTINCT g.group_id) AS group_count,
+    COUNT(DISTINCT gm.user_id) AS group_user_count,
+    COUNT(DISTINCT ui.user_id) AS individual_user_count,
+    (     COUNT(DISTINCT g.group_id) * 10 + COUNT(DISTINCT gm.user_id) * 5 + COUNT(DISTINCT ui.user_id) * 3   ) AS interest_weight
+FROM
+    Interests i
+LEFT JOIN
+    `Group` g
+ON
+    i.interest_id = g.interest_id
+LEFT JOIN
+    Group_Members gm
+ON
+    g.group_id = gm.group_id
+LEFT JOIN
+    User_Interests ui
+ON
+    i.interest_id = ui.interest_id
+GROUP BY
+    i.interest_id,   i.interest_name
+ORDER BY
+    interest_weight DESC
+LIMIT  15;
 ```
 <img width="1469" alt="Screenshot 2025-03-19 at 9 33 09 PM" src="https://github.com/user-attachments/assets/7d719fe3-00a7-4c76-af9c-ce1f62eb7936" />
 <img width="1469" alt="Screenshot 2025-03-19 at 9 33 48 PM" src="https://github.com/user-attachments/assets/e4ea32e2-b5aa-4314-ad2a-fc53b228f83e" />
