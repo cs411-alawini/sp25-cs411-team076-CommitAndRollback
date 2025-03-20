@@ -106,15 +106,77 @@ CREATE TABLE Event (
 
 ### Query 1
 ```sql
+SELECT
+  g.group_id,
+  g.group_name,
+  COUNT(gm.user_id) AS member_count
+FROM
+  `Group` g
+  JOIN User_Interests ui ON g.interest_id = ui.interest_id
+  LEFT JOIN Group_Members gm ON g.group_id = gm.group_id
+WHERE
+  ui.user_id = 1
+  AND g.group_id NOT IN (
+    SELECT
+      group_id
+    FROM
+      Group_Members
+    WHERE
+      user_id = 1
+  )
+GROUP BY
+  g.group_id,
+  g.group_name
+ORDER BY
+  member_count DESC
+LIMIT
+  15;
 ```
-[Screenshot of the top 15 rows of the query]
+<img width="696" alt="Screenshot 2025-03-19 at 9 24 22 PM" src="https://github.com/user-attachments/assets/3c0a6bda-e451-4ddf-b3ca-b36c9a254589" />
+
 [Explain the relevant functionalities included like JOIN, SET, GROUPBY, SUBQUERY]
+
 
 ### Query 2
 ```sql
+SELECT
+  ui2.user_id AS recommended_user_id,
+  u2.full_name AS recommended_user_name,
+  COUNT(ui1.interest_id) AS common_interests,
+  ABS(u1.age - u2.age) AS age_difference
+FROM
+  User_Interests ui1
+  JOIN User_Interests ui2 ON ui1.interest_id = ui2.interest_id
+  AND ui1.user_id <> ui2.user_id -- Ensure they are different users
+  JOIN User u1 ON ui1.user_id = u1.user_id
+  JOIN User u2 ON ui2.user_id = u2.user_id
+  LEFT JOIN Friendships f ON (
+    f.user1_id = ui1.user_id
+    AND f.user2_id = ui2.user_id
+  )
+  OR (
+    f.user2_id = ui1.user_id
+    AND f.user1_id = ui2.user_id
+  )
+WHERE
+  ui1.user_id = 1 -- Replace '?' with the current user ID
+  AND f.user1_id IS NULL -- Ensure they are NOT already friends
+GROUP BY
+  ui2.user_id,
+  u2.full_name,
+  u1.age,
+  u2.age
+ORDER BY
+  common_interests DESC,
+  age_difference ASC
+LIMIT
+  15;
 ```
-[Screenshot of the top 15 rows of the query]
+<img width="696" alt="Screenshot 2025-03-19 at 9 26 50 PM" src="https://github.com/user-attachments/assets/6ca29d12-f340-4cb8-97ce-1ee2f1acafbd" />
+<img width="696" alt="Screenshot 2025-03-19 at 9 27 10 PM" src="https://github.com/user-attachments/assets/0a5353a2-9494-4c2c-ae7f-71da8343c976" />
+
 [Explain the relevant functionalities included like JOIN, SET, GROUPBY, SUBQUERY]
+
 
 ### Query 3
 ```sql
@@ -124,8 +186,13 @@ CREATE TABLE Event (
 
 ### Query 4
 ```sql
+SELECT   i.interest_id,   i.interest_name,   COUNT(DISTINCT g.group_id) AS group_count,   COUNT(DISTINCT gm.user_id) AS group_user_count,   COUNT(DISTINCT ui.user_id) AS individual_user_count,   (     COUNT(DISTINCT g.group_id) * 10 + COUNT(DISTINCT gm.user_id) * 5 + COUNT(DISTINCT ui.user_id) * 3   ) AS interest_weight FROM   Interests i   LEFT JOIN `Group` g ON i.interest_id = g.interest_id   LEFT JOIN Group_Members gm ON g.group_id = gm.group_id   LEFT JOIN User_Interests ui ON i.interest_id = ui.interest_id GROUP BY   i.interest_id,   i.interest_name ORDER BY   interest_weight DESC  LIMIT  15;
 ```
-[Screenshot of the top 15 rows of the query]
+<img width="1469" alt="Screenshot 2025-03-19 at 9 33 09 PM" src="https://github.com/user-attachments/assets/7d719fe3-00a7-4c76-af9c-ce1f62eb7936" />
+<img width="1469" alt="Screenshot 2025-03-19 at 9 33 48 PM" src="https://github.com/user-attachments/assets/e4ea32e2-b5aa-4314-ad2a-fc53b228f83e" />
+<img width="1469" alt="Screenshot 2025-03-19 at 9 34 00 PM" src="https://github.com/user-attachments/assets/fd953fba-c521-4d5b-bbfe-668d2539b8ef" />
+
+
 [Explain the relevant functionalities included like JOIN, SET, GROUPBY, SUBQUERY]
 
 
