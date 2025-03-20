@@ -180,8 +180,32 @@ LIMIT
 
 ### Query 3
 ```sql
+SELECT
+  g.group_id,
+  g.group_name,
+  COUNT(DISTINCT m.message_id) AS message_count,
+  COUNT(DISTINCT gm.user_id) AS member_count,
+  COUNT(DISTINCT e.event_id) AS event_count
+FROM
+  `Group` g
+  JOIN Group_Members gm ON g.group_id = gm.group_id
+  JOIN Messages m ON g.chat_id = m.chat_id
+  LEFT JOIN Event e ON g.group_id = e.group_id
+WHERE
+  m.sent_at >= NOW() - INTERVAL 7 DAY
+GROUP BY
+  g.group_id,
+  g.group_name
+ORDER BY
+  message_count DESC,
+  event_count DESC,
+  member_count DESC
+LIMIT
+  15;
 ```
-[Screenshot of the top 15 rows of the query]
+<img width="692" alt="Screenshot 2025-03-19 at 9 54 21 PM" src="https://github.com/user-attachments/assets/3e1d19d2-283f-469a-bfb5-c3bd71035890" />
+
+
 [Explain the relevant functionalities included like JOIN, SET, GROUPBY, SUBQUERY]
 
 ### Query 4
