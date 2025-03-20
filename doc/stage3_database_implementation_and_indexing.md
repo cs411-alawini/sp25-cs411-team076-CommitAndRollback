@@ -98,7 +98,7 @@ CREATE TABLE Event (
 
 
 ## Data in the tables 
-[Add screenshots here to show the number of rows in each table.]
+<img width="433" alt="Screenshot 2025-03-19 at 9 09 10 PM" src="https://github.com/user-attachments/assets/86df5e2c-a0b6-4d6d-9455-a60189ca7efe" />
 
 
 ## Advanced Queries 
