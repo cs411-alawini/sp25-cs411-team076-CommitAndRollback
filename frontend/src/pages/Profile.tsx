@@ -20,6 +20,7 @@ import {
   Interests as InterestsIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 interface User {
   user_id: number;
@@ -38,7 +39,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/users/${userId}`);
+        const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`);
         setUser(response.data);
       } catch (error) {
         console.error('Error fetching user:', error);

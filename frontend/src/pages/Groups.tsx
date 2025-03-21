@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import { Group as GroupIcon, Person as PersonIcon } from '@mui/icons-material';
+import { API_BASE_URL } from '../config';
 
 interface Group {
   group_id: number;
@@ -26,7 +27,7 @@ const Groups = () => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/groups');
+        const response = await axios.get(`${API_BASE_URL}/api/groups`);
         setGroups(response.data);
       } catch (error) {
         console.error('Error fetching groups:', error);

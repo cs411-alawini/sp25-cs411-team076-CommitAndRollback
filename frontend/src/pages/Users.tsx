@@ -12,6 +12,7 @@ import {
   Divider
 } from '@mui/material';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 interface UserRecommendation {
   recommended_user_id: number;
@@ -27,7 +28,7 @@ const Users = () => {
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/users/${currentUserId}/recommendations`);
+        const response = await axios.get(`${API_BASE_URL}/api/users/${currentUserId}/recommendations`);
         setRecommendations(response.data);
       } catch (error) {
         console.error('Error fetching recommendations:', error);
