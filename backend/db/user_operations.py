@@ -104,4 +104,29 @@ def get_user_recommendations(user_id):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def verify_login(username, password):
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        cursor.execute("""
+            SELECT user_id, full_name, gender, age, location, bio 
+            FROM User 
+            WHERE full_name = %s AND password = %s
+        """, (username, password))
+        user = cursor.fetchone()
+        return user
+    except Exception as e:
+        print(f"Error in verify_login: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 

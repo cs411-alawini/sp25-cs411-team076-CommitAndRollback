@@ -1,5 +1,5 @@
-from flask import jsonify
-from db.user_operations import get_all_users, get_user_by_id, get_user_recommendations
+from flask import jsonify, request
+from db.user_operations import get_all_users, get_user_by_id, get_user_recommendations, verify_login
 from db.group_operations import get_all_groups
 
 def setup_routes(app):
@@ -15,6 +15,30 @@ def setup_routes(app):
                 "groups": "/api/groups"
             }
         })
+
+    @app.route('/api/login', methods=['POST'])
+    def login():
+        data = request.get_json()
+        if not data or 'username' not in data or 'password' not in data:
+            return jsonify({"error": "Username and password are required"}), 400
+            
+        username = data['username']
+        password = data['password']
+        
+        user = verify_login(username, password)
+        if user:
+            # Remove sensitive information before sending response
+            user.pop('password', None)
+            return jsonify({
+                "success": True,
+                "message": "Login successful",
+                "user": user
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Invalid username or password"
+            }), 401
 
     # User Routes
     @app.route('/api/users', methods=['GET'])
