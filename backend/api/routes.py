@@ -1,5 +1,5 @@
 from flask import jsonify, request
-from db.user_operations import get_all_users, get_user_by_id, get_user_recommendations, verify_login, create_user, get_friend_recommendations
+from db.user_operations import get_all_users, get_user_by_id, get_user_recommendations, verify_login, create_user, get_friend_recommendations, get_user_details, update_user_details
 from db.group_operations import get_all_groups, get_group_recommendations
 
 def setup_routes(app):
@@ -90,6 +90,24 @@ def setup_routes(app):
         if recommendations is None:
             return jsonify({"error": "Failed to fetch group recommendations"}), 500
         return jsonify(recommendations)
+
+    @app.route('/api/users/<int:user_id>/details', methods=['GET'])
+    def user_details(user_id):
+        user = get_user_details(user_id)
+        if user is None:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify(user)
+
+    @app.route('/api/users/<int:user_id>/details', methods=['PATCH'])
+    def update_user(user_id):
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+            
+        result = update_user_details(user_id, data)
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result)
 
     # Group Routes
     @app.route('/api/groups', methods=['GET'])

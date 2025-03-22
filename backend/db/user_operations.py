@@ -242,4 +242,80 @@ def get_friend_recommendations(user_id):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def get_user_details(user_id):
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        cursor.execute("""
+            SELECT user_id, password, full_name, gender, age, location, bio, created_at 
+            FROM User 
+            WHERE user_id = %s
+        """, (user_id,))
+        user = cursor.fetchone()
+        if user and user['created_at']:
+            # Convert the datetime to string in YYYY-MM-DD HH:MM:SS format
+            user['created_at'] = user['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+        return user
+    except Exception as e:
+        print(f"Error in get_user_details: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def update_user_details(user_id, user_data):
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        cursor.execute("""
+            UPDATE User 
+            SET password = %s,
+                full_name = %s,
+                gender = %s,
+                age = %s,
+                location = %s,
+                bio = %s,
+                created_at = %s
+            WHERE user_id = %s
+        """, (
+            user_data['password'],
+            user_data['full_name'],
+            user_data['gender'],
+            user_data['age'],
+            user_data['location'],
+            user_data['bio'],
+            user_data['created_at'],
+            user_id
+        ))
+        
+        connection.commit()
+        
+        # Get updated user details
+        updated_user = get_user_details(user_id)
+        return updated_user
+        
+    except Exception as e:
+        print(f"Error in update_user_details: {str(e)}")
+        if connection:
+            connection.rollback()
+        return {"error": str(e)}
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 
