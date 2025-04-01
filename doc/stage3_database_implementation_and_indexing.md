@@ -199,6 +199,7 @@ LIMIT
 <img width="696" alt="Screenshot 2025-03-19 at 9 26 50 PM" src="https://github.com/user-attachments/assets/6ca29d12-f340-4cb8-97ce-1ee2f1acafbd" />
 <img width="696" alt="Screenshot 2025-03-19 at 9 27 10 PM" src="https://github.com/user-attachments/assets/0a5353a2-9494-4c2c-ae7f-71da8343c976" />
 
+### Key Functionalities in the Query
 
 #### JOINs
 - **Self-JOIN on User_Interests**: `JOIN User_Interests ui2 ON ui1.interest_id = ui2.interest_id`  
@@ -310,6 +311,8 @@ LIMIT  15;
 <img width="1469" alt="Screenshot 2025-03-19 at 9 33 09 PM" src="https://github.com/user-attachments/assets/7d719fe3-00a7-4c76-af9c-ce1f62eb7936" />
 <img width="1469" alt="Screenshot 2025-03-19 at 9 33 48 PM" src="https://github.com/user-attachments/assets/e4ea32e2-b5aa-4314-ad2a-fc53b228f83e" />
 <img width="1469" alt="Screenshot 2025-03-19 at 9 34 00 PM" src="https://github.com/user-attachments/assets/fd953fba-c521-4d5b-bbfe-668d2539b8ef" />
+
+### Key Functionalities in the Query
 
 #### JOINs
 - **Triple LEFT JOIN chain**: Connects Interests → Groups → Group Members → User Interests  
