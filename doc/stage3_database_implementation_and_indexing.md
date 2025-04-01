@@ -300,7 +300,7 @@ Here we have analyzed the performance impact of various indexing strategies acro
 ## Query 1: Group Recommendations Based on User Interests
 
 ### Base Query
-sql
+```sql
 EXPLAIN ANALYZE
 SELECT
   g.group_id,
@@ -336,7 +336,7 @@ LIMIT
 
 #### 1. Index on Group_Members(group_id, user_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_group_members_group_user ON Group_Members(group_id, user_id);
 
 *Performance Metrics:*
@@ -352,7 +352,7 @@ CREATE INDEX idx_group_members_group_user ON Group_Members(group_id, user_id);
 
 #### 2. Index on Group(group_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_group_group_id ON Group(group_id);
 
 *Performance Metrics:*
@@ -369,7 +369,7 @@ CREATE INDEX idx_group_group_id ON Group(group_id);
 
 #### 3. Index on User_Interests(user_id, interest_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_user_interests_user_interest ON User_Interests(user_id, interest_id);
 
 *Performance Metrics:*
@@ -392,7 +392,7 @@ The index on User_Interests(user_id, interest_id) provided the best performance 
 ## Query 2: Friend Recommendations Based on Common Interests
 
 ### Base Query
-sql
+```sql
 EXPLAIN ANALYZE
 SELECT
   ui2.user_id AS recommended_user_id,
@@ -434,7 +434,7 @@ LIMIT
 
 #### 1. Index on User_Interests(user_id, interest_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_user_interests_userid_interestid ON User_Interests(user_id, interest_id);
 
 *Performance Metrics:*
@@ -451,7 +451,7 @@ CREATE INDEX idx_user_interests_userid_interestid ON User_Interests(user_id, int
 
 #### 2. Index on Friendships(user1_id, user2_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_friendships_user1_user2 ON Friendships(user1_id, user2_id);
 
 *Performance Metrics:*
@@ -468,7 +468,7 @@ CREATE INDEX idx_friendships_user1_user2 ON Friendships(user1_id, user2_id);
 
 #### 3. Index on User(age)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_user_age ON User(age);
 
 *Performance Metrics:*
@@ -495,7 +495,7 @@ The combination of Friendships(user1_id, user2_id) and User(age) indexes provide
 ## Query 3: Active Group Analysis
 
 ### Base Query
-sql
+```sql
 EXPLAIN ANALYZE
 SELECT
   g.group_id,
@@ -527,7 +527,7 @@ LIMIT
 
 #### 1. Index on Messages(sent_at)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_messages_sent_at ON Messages(sent_at);
 
 *Performance Metrics:*
@@ -543,7 +543,7 @@ CREATE INDEX idx_messages_sent_at ON Messages(sent_at);
 
 #### 2. Composite Index on Messages(chat_id, sent_at)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_messages_chat_sent ON Messages(chat_id, sent_at);
 
 *Performance Metrics:*
@@ -559,7 +559,7 @@ CREATE INDEX idx_messages_chat_sent ON Messages(chat_id, sent_at);
 
 #### 3. Index on Group_Members(group_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_group_members_group ON Group_Members(group_id);
 
 *Performance Metrics:*
@@ -576,7 +576,7 @@ CREATE INDEX idx_group_members_group ON Group_Members(group_id);
 
 #### 4. Index on Event(group_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_event_group ON Event(group_id);
 
 *Performance Metrics:*
@@ -599,7 +599,7 @@ The composite index on Messages(chat_id, sent_at) provided the most significant 
 ## Query 4: Interest Popularity Analysis
 
 ### Base Query
-sql
+```sql
 EXPLAIN ANALYZE
 SELECT
     i.interest_id, i.interest_name,
@@ -633,7 +633,7 @@ LIMIT 15;
 
 #### 1. Index on Group(interest_id, group_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_group_interest_group ON `Group`(interest_id, group_id);
 
 *Performance Metrics:*
@@ -657,7 +657,7 @@ CREATE INDEX idx_group_interest_group ON `Group`(interest_id, group_id);
 
 #### 2. Index on User_Interests(interest_id, user_id)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_user_interests_interest_user ON User_Interests(interest_id, user_id);
 
 *Performance Metrics:*
@@ -673,7 +673,7 @@ CREATE INDEX idx_user_interests_interest_user ON User_Interests(interest_id, use
 
 #### 3. Index on Interests(interest_id, interest_name)
 *SQL:*
-sql
+```sql
 CREATE INDEX idx_interests_id_name ON Interests(interest_id, interest_name);
 
 *Performance Metrics:*
