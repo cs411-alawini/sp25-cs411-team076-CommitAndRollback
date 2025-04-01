@@ -134,7 +134,31 @@ LIMIT
 ```
 <img width="696" alt="Screenshot 2025-03-19 at 9 24 22 PM" src="https://github.com/user-attachments/assets/3c0a6bda-e451-4ddf-b3ca-b36c9a254589" />
 
-[Explain the relevant functionalities included like JOIN, SET, GROUPBY, SUBQUERY]
+### Key Functionalities in the Query
+
+#### JOINs
+- `JOIN User_Interests ui ON g.interest_id = ui.interest_id`  
+  - Matches groups with the user’s interests.
+- `LEFT JOIN Group_Members gm ON g.group_id = gm.group_id`  
+  - Allows counting members while keeping groups with zero members.
+
+#### WHERE Clause
+- `ui.user_id = 1` → Selects groups matching the user's interests.
+- `g.group_id NOT IN (SELECT group_id FROM Group_Members WHERE user_id = 1)`  
+  - **Subquery:** Excludes groups where the user is already a member.
+
+#### COUNT & GROUP BY
+- `COUNT(gm.user_id)`: Counts members in each group.
+- `GROUP BY g.group_id, g.group_name`: Ensures unique groups in results.
+
+#### ORDER BY
+- `ORDER BY member_count DESC`: Prioritizes more popular groups.
+
+#### LIMIT
+- `LIMIT 15`: Returns only the top **15 most popular** recommended groups.
+
+#### Purpose
+Recommends **groups based on user interests** while **excluding groups the user already joined**, ranking them by popularity.
 
 
 ### Query 2
@@ -206,7 +230,29 @@ LIMIT
 <img width="692" alt="Screenshot 2025-03-19 at 9 54 21 PM" src="https://github.com/user-attachments/assets/3e1d19d2-283f-469a-bfb5-c3bd71035890" />
 
 
-[Explain the relevant functionalities included like JOIN, SET, GROUPBY, SUBQUERY]
+### Key Functionalities in the Query
+
+#### JOINs
+- Combines `Group`, `Group_Members`, `Messages`, and `Event` tables.
+- `LEFT JOIN` ensures groups without events are included.
+
+#### WHERE Clause
+- Filters messages sent in the **last 7 days**.
+
+#### COUNT & DISTINCT
+- Counts unique **messages, members, and events** per group.
+
+#### GROUP BY
+- Groups results by `group_id` to aggregate data.
+
+#### ORDER BY
+- Sorts by **message count (desc) → event count (desc) → member count (desc)**.
+
+#### LIMIT 15
+- Selects **top 15 trending groups** based on activity.
+
+#### Purpose
+Finds active groups based on recent messages, events, and members.
 
 ### Query 4
 ```sql
