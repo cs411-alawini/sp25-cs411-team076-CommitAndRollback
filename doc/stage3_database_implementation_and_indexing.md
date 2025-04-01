@@ -199,8 +199,32 @@ LIMIT
 <img width="696" alt="Screenshot 2025-03-19 at 9 26 50 PM" src="https://github.com/user-attachments/assets/6ca29d12-f340-4cb8-97ce-1ee2f1acafbd" />
 <img width="696" alt="Screenshot 2025-03-19 at 9 27 10 PM" src="https://github.com/user-attachments/assets/0a5353a2-9494-4c2c-ae7f-71da8343c976" />
 
-[Explain the relevant functionalities included like JOIN, SET, GROUPBY, SUBQUERY]
 
+#### JOINs
+- **Self-JOIN on User_Interests**: `JOIN User_Interests ui2 ON ui1.interest_id = ui2.interest_id`  
+  - Finds users with shared interests (interest-to-interest matching).
+- **User Table JOINs**: `JOIN User u1` and `JOIN User u2`  
+  - Retrieves profile data for both users in the comparison.
+- **LEFT JOIN Friendships**: Complex OR condition checks bidirectional friendships.  
+  - Tests both directions of friendship relationships (`user1_id` ↔ `user2_id`).
+
+#### WHERE Clause
+- `ui1.user_id = 1` → Focuses on recommendations for User 1.
+- `f.user1_id IS NULL` → Excludes existing friends using NULL check from LEFT JOIN.
+
+#### COUNT & GROUP BY
+- `COUNT(ui1.interest_id)`: Tracks shared interests between users.
+- `GROUP BY ui2.user_id, u2.full_name, u1.age, u2.age`: Ensures unique user comparisons.
+
+#### ORDER BY
+- `common_interests DESC`: Prioritizes users with most shared interests.
+- `age_difference ASC`: Breaks ties with smallest age gap.
+
+#### LIMIT
+- `LIMIT 15`: Returns top 15 recommendations.
+
+#### Purpose  
+Recommends **potential friends** based on shared interests and age proximity, while **excluding existing friends**. Uses interest overlap as primary ranking factor.
 
 ### Query 3
 ```sql
@@ -282,12 +306,34 @@ ORDER BY
     interest_weight DESC
 LIMIT  15;
 ```
+
 <img width="1469" alt="Screenshot 2025-03-19 at 9 33 09 PM" src="https://github.com/user-attachments/assets/7d719fe3-00a7-4c76-af9c-ce1f62eb7936" />
 <img width="1469" alt="Screenshot 2025-03-19 at 9 33 48 PM" src="https://github.com/user-attachments/assets/e4ea32e2-b5aa-4314-ad2a-fc53b228f83e" />
 <img width="1469" alt="Screenshot 2025-03-19 at 9 34 00 PM" src="https://github.com/user-attachments/assets/fd953fba-c521-4d5b-bbfe-668d2539b8ef" />
 
+#### JOINs
+- **Triple LEFT JOIN chain**: Connects Interests → Groups → Group Members → User Interests  
+  - Maintains all interests even with no associated groups/users.
+- `LEFT JOIN` strategy preserves base interest records regardless of relationships.
 
-[Explain the relevant functionalities included like JOIN, SET, GROUPBY, SUBQUERY]
+#### COUNT Operations
+- **Three distinct metrics**:  
+  - `group_count`: Groups per interest  
+  - `group_user_count`: Members in interest-related groups  
+  - `individual_user_count`: Users with explicit interest associations
+
+#### Weight Calculation
+- `interest_weight`: Custom scoring formula prioritizing groups (10x), group members (5x), and individual users (3x).
+
+#### GROUP BY/ORDER BY
+- `GROUP BY i.interest_id`: Ensures one row per interest.
+- `ORDER BY interest_weight DESC`: Ranks interests by composite score.
+
+#### LIMIT
+- `LIMIT 15`: Shows top 15 interests.
+
+#### Purpose  
+Identifies **trending interests** using a weighted scoring system that values group activity higher than individual preferences. Acts as popularity heatmap for content recommendations.
 
 
 ## Indexing 
@@ -327,7 +373,7 @@ ORDER BY
   member_count DESC
 LIMIT
   15;
-
+```
 
 ![Query 1 Before Index](https://github.com/user-attachments/assets/5d68cbdc-da62-404f-8a69-d304d6e5cf33)
 
@@ -338,7 +384,7 @@ LIMIT
 *SQL:*
 ```sql
 CREATE INDEX idx_group_members_group_user ON Group_Members(group_id, user_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *52.7*
 - *After Indexing:* Cost = *72.3* (Increase)
@@ -354,7 +400,7 @@ CREATE INDEX idx_group_members_group_user ON Group_Members(group_id, user_id);
 *SQL:*
 ```sql
 CREATE INDEX idx_group_group_id ON Group(group_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *52.7*
 - *After Indexing:* Cost = *52.7* (No change)
@@ -371,7 +417,7 @@ CREATE INDEX idx_group_group_id ON Group(group_id);
 *SQL:*
 ```sql
 CREATE INDEX idx_user_interests_user_interest ON User_Interests(user_id, interest_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *52.7*
 - *After Indexing:* Cost = *44.9* (Decrease)
@@ -426,7 +472,7 @@ ORDER BY
   age_difference ASC
 LIMIT
   15;
-
+```
 ![Query 2](https://github.com/user-attachments/assets/50168e2f-3e55-4ae6-875a-497cf271b477)
 
 
@@ -436,7 +482,7 @@ LIMIT
 *SQL:*
 ```sql
 CREATE INDEX idx_user_interests_userid_interestid ON User_Interests(user_id, interest_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Nested loop inner join (cost=49567, rows=75714) (actual time=16.2..1214, rows=92720, loops=1)
 - *After Indexing:* Nested loop inner join (cost=54546, rows=75714) (actual time=36.1..1823, rows=92720, loops=1)
@@ -453,7 +499,7 @@ CREATE INDEX idx_user_interests_userid_interestid ON User_Interests(user_id, int
 *SQL:*
 ```sql
 CREATE INDEX idx_friendships_user1_user2 ON Friendships(user1_id, user2_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *337498*
 - *After Indexing:* Cost = *170689* (Significant improvement)
@@ -470,7 +516,7 @@ CREATE INDEX idx_friendships_user1_user2 ON Friendships(user1_id, user2_id);
 *SQL:*
 ```sql
 CREATE INDEX idx_user_age ON User(age);
-
+```
 *Performance Metrics:*
 - *Before Indexing:*
   - Nested Loop Inner Join: *54546*
@@ -519,7 +565,7 @@ ORDER BY
   member_count DESC
 LIMIT
   15;
-
+```
 ![Query 3 Before Indexing](https://github.com/user-attachments/assets/f0df7f17-73e7-49fd-9f7d-95a1b4b8218d)
 
 
@@ -529,7 +575,7 @@ LIMIT
 *SQL:*
 ```sql
 CREATE INDEX idx_messages_sent_at ON Messages(sent_at);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *72.5*
 - *After Indexing:* Cost = *72.5* (No change)
@@ -545,7 +591,7 @@ CREATE INDEX idx_messages_sent_at ON Messages(sent_at);
 *SQL:*
 ```sql
 CREATE INDEX idx_messages_chat_sent ON Messages(chat_id, sent_at);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *72.5*
 - *After Indexing:* Cost = *65* (Improvement)
@@ -561,7 +607,7 @@ CREATE INDEX idx_messages_chat_sent ON Messages(chat_id, sent_at);
 *SQL:*
 ```sql
 CREATE INDEX idx_group_members_group ON Group_Members(group_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *72.5*
 - *After Indexing:* Cost = *100* (Degradation)
@@ -578,7 +624,7 @@ CREATE INDEX idx_group_members_group ON Group_Members(group_id);
 *SQL:*
 ```sql
 CREATE INDEX idx_event_group ON Event(group_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *72.5*
 - *After Indexing:* No significant change
@@ -626,7 +672,7 @@ GROUP BY
 ORDER BY
     interest_weight DESC
 LIMIT 15;
-
+```
 ![Query 4](https://github.com/user-attachments/assets/6edd668e-0d47-45d3-a6b2-709ee1841576)
 
 ### Indexes Tested
@@ -635,7 +681,7 @@ LIMIT 15;
 *SQL:*
 ```sql
 CREATE INDEX idx_group_interest_group ON `Group`(interest_id, group_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:*
   - Total Query Cost: *383381*
@@ -659,7 +705,7 @@ CREATE INDEX idx_group_interest_group ON `Group`(interest_id, group_id);
 *SQL:*
 ```sql
 CREATE INDEX idx_user_interests_interest_user ON User_Interests(interest_id, user_id);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *380547*
 - *After Indexing:* Cost = *418448* (Degradation)
@@ -675,7 +721,7 @@ CREATE INDEX idx_user_interests_interest_user ON User_Interests(interest_id, use
 *SQL:*
 ```sql
 CREATE INDEX idx_interests_id_name ON Interests(interest_id, interest_name);
-
+```
 *Performance Metrics:*
 - *Before Indexing:* Cost = *418448*
 - *After Indexing:* Cost = *370747* (Improvement ~12%)
