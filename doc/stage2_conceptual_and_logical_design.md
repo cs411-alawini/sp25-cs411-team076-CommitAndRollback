@@ -1,6 +1,5 @@
 ## UML Diagram
-
-Insert here
+![UML](https://github.com/user-attachments/assets/59b9909a-5b99-4eb7-ad32-1d38fb87dfa6)
 
 ## A. Assumptions for each entity and relationship in our model along with the cardinality of relationships.
 
@@ -112,10 +111,11 @@ Insert here
 - This relationship allows for personalized content and group recommendations based on user preferences.
 
 ### 2. `friendships`
-
 **Purpose:** Tracks connections between users.
 
-**Cardinality:** M:N self-referencing relationship on `Users`.
+**Cardinality:**
+- M:N self-referencing relationship on Users
+- Each friendship connects exactly two users
 
 **Foreign Keys:**
 - `user1_id` (FK to `Users.user_id`)
@@ -123,9 +123,9 @@ Insert here
 - `chat_id` (FK to `Chat.chat_id`)
 
 **Assumptions:**
-- Friendship status tracks relationship states (`pending`, `accepted`, `blocked`).
-- Each friendship is associated with a dedicated chat for private messaging.
-- The application must ensure that no duplicate friendships exist (`user1-user2` and `user2-user1`).
+- Each friendship is associated with a dedicated chat for private messaging
+- The application must ensure that no duplicate friendships exist (`user1-user2` and `user2-user1`)
+
 
 ### 3. `Group_Members`
 
@@ -155,8 +155,31 @@ Insert here
 - Each group is organized around a primary interest theme.
 - This relationship enables interest-based group discovery and recommendations.
 - The associated interest helps define the group's purpose and content focus.
+  
+### 5. `FriendRequests`
+**Purpose:** Tracks friend request interactions between users.
 
-### 5. Other Basic Relationships
+**Cardinality:**
+- M:1 relationship to sender (from Users)
+- M:1 relationship to receiver (from Users)
+
+**Foreign Keys:**
+- `sender_id` (FK to `Users.user_id`)
+- `receiver_id` (FK to `Users.user_id`)
+
+**Composite Primary Key:**
+- (`sender_id`, `receiver_id`)
+
+**Attributes:**
+- `status` (e.g., `'pending'`, `'accepted'`, `'declined'`)
+- `sent_at` (timestamp of request)
+
+**Assumptions:**
+- A single user can send or receive multiple friend requests
+- The composite primary key prevents duplicate requests between the same users
+- Status tracking allows for comprehensive friend connection management
+  
+### 6. Other Basic Relationships
 
 **Message Sender:**
 - Each message is sent by exactly one user (M:1).
