@@ -1,42 +1,54 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { Container } from '@mui/material';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import Users from './pages/Users';
-import Groups from './pages/Groups';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Auth from './pages/Auth';
+import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+const App: React.FC = () => {
+  // Check if user is authenticated
+  const isAuthenticated = () => {
+    return localStorage.getItem('user') !== null;
+  };
 
-function App() {
+  // Protected route component
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (!isAuthenticated()) {
+      return <Navigate to="/login" />;
+    }
+    return <>{children}</>;
+  };
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <Navbar />
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/groups" element={<Groups />} />
-            <Route path="/profile/:userId" element={<Profile />} />
-          </Routes>
-        </Container>
-      </Router>
-    </ThemeProvider>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Auth />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/me" 
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/" 
+          element={
+            isAuthenticated() ? 
+              <Navigate to="/dashboard" /> : 
+              <Navigate to="/login" />
+          } 
+        />
+      </Routes>
+    </Router>
   );
 }
 
-export default App;
+export default App; 

@@ -16,8 +16,8 @@ def get_connection() -> pymysql.connections.Connection:
     connection = connector.connect(
         "database-systems-uiuc:us-central1:database-systems-411",  # Your instance connection name
         "pymysql",
-        user="",       
-        password="",   # Replace with your actual password
+        user="root",       
+        password="synapo-411-database",
         db="synapo",
         enable_iam_auth=False  # Disable IAM authentication
     )

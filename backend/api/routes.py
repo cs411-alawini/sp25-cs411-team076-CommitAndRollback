@@ -47,7 +47,8 @@ def setup_routes(app):
             return jsonify({
                 "success": True,
                 "message": "Login successful",
-                "user": user
+                "user": user,
+                "redirect_url": "/dashboard"
             })
         else:
             return jsonify({
