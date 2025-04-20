@@ -5,7 +5,10 @@ from db.user_operations import (
     get_user_friends, create_friendship, create_friend_request, 
     get_pending_friend_requests, update_friend_request
 )
-from db.group_operations import get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group
+from db.group_operations import (
+    get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group,
+    get_group_members, get_group_events
+)
 from db.chat_operations import send_message, get_chat_messages, get_group_messages, send_group_message
 
 def setup_routes(app):
@@ -33,7 +36,9 @@ def setup_routes(app):
                 "create_friendship": "/api/users/<user_id1>/friends/<user_id2>",
                 "friend_requests": "/api/users/<user_id>/friend-requests",
                 "send_friend_request": "/api/users/<user_id1>/friend-requests/<user_id2>",
-                "update_friend_request": "/api/friend-requests/<sender_id>/<receiver_id>/update"
+                "update_friend_request": "/api/friend-requests/<sender_id>/<receiver_id>/update",
+                "group_members": "/api/groups/<group_id>/members",
+                "group_events": "/api/groups/<group_id>/events"
             }
         })
 
@@ -267,4 +272,24 @@ def setup_routes(app):
             return jsonify({"error": "Failed to update friend request"}), 500
         if "error" in result:
             return jsonify(result), 400
-        return jsonify(result) 
+        return jsonify(result)
+
+    @app.route('/api/groups/<int:group_id>/members', methods=['GET'])
+    def get_group_members_route(group_id):
+        """Get all members of a group"""
+        members = get_group_members(group_id)
+        if members is None:
+            return jsonify({"error": "Failed to fetch group members"}), 500
+        if "error" in members:
+            return jsonify(members), 404
+        return jsonify(members)
+
+    @app.route('/api/groups/<int:group_id>/events', methods=['GET'])
+    def get_group_events_route(group_id):
+        """Get all events of a group"""
+        events = get_group_events(group_id)
+        if events is None:
+            return jsonify({"error": "Failed to fetch group events"}), 500
+        if "error" in events:
+            return jsonify(events), 404
+        return jsonify(events) 

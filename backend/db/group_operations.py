@@ -199,4 +199,116 @@ def add_user_to_group(user_id, group_id):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def get_group_members(group_id):
+    """
+    Get all members of a group.
+    
+    Args:
+        group_id (int): The ID of the group
+        
+    Returns:
+        list: A list of dictionaries containing member details
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Check if group exists
+        cursor.execute("SELECT 1 FROM `Group` WHERE group_id = %s", (group_id,))
+        if not cursor.fetchone():
+            return {"error": "Group not found"}
+        
+        # Get all members with their details
+        cursor.execute("""
+            SELECT 
+                u.user_id,
+                u.full_name,
+                u.location,
+                u.bio,
+                gm.joined_at
+            FROM 
+                Group_Members gm
+            JOIN 
+                User u ON gm.user_id = u.user_id
+            WHERE 
+                gm.group_id = %s
+            ORDER BY 
+                gm.joined_at DESC
+        """, (group_id,))
+        
+        members = cursor.fetchall()
+        
+        # Format timestamps
+        for member in members:
+            if member['joined_at']:
+                member['joined_at'] = member['joined_at'].strftime('%Y-%m-%d %H:%M:%S')
+                
+        return members
+    except Exception as e:
+        print(f"Error in get_group_members: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def get_group_events(group_id):
+    """
+    Get all events of a group.
+    
+    Args:
+        group_id (int): The ID of the group
+        
+    Returns:
+        list: A list of dictionaries containing event details
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Check if group exists
+        cursor.execute("SELECT 1 FROM `Group` WHERE group_id = %s", (group_id,))
+        if not cursor.fetchone():
+            return {"error": "Group not found"}
+        
+        # Get all events with creator details
+        cursor.execute("""
+            SELECT 
+                e.event_id,
+                e.event_name,
+                e.group_id,
+                e.created_by,
+                u.full_name as creator_name
+            FROM 
+                Event e
+            JOIN 
+                User u ON e.created_by = u.user_id
+            WHERE 
+                e.group_id = %s
+            ORDER BY 
+                e.event_id DESC
+        """, (group_id,))
+        
+        events = cursor.fetchall()
+        return events
+    except Exception as e:
+        print(f"Error in get_group_events: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 
