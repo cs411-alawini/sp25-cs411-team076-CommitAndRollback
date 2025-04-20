@@ -1,5 +1,10 @@
 from flask import jsonify, request
-from db.user_operations import get_all_users, get_user_by_id, get_user_recommendations, verify_login, create_user, get_friend_recommendations, get_user_details, update_user_details, get_user_friends, create_friendship
+from db.user_operations import (
+    get_all_users, get_user_by_id, get_user_recommendations, verify_login, 
+    create_user, get_friend_recommendations, get_user_details, update_user_details, 
+    get_user_friends, create_friendship, create_friend_request, 
+    get_pending_friend_requests, update_friend_request
+)
 from db.group_operations import get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group
 from db.chat_operations import send_message, get_chat_messages, get_group_messages, send_group_message
 
@@ -25,7 +30,10 @@ def setup_routes(app):
                 "user_groups": "/api/users/<user_id>/groups",
                 "add_user_to_group": "/api/groups/<group_id>/add-user",
                 "user_friends": "/api/users/<user_id>/friends",
-                "create_friendship": "/api/users/<user_id1>/friends/<user_id2>"
+                "create_friendship": "/api/users/<user_id1>/friends/<user_id2>",
+                "friend_requests": "/api/users/<user_id>/friend-requests",
+                "send_friend_request": "/api/users/<user_id1>/friend-requests/<user_id2>",
+                "update_friend_request": "/api/friend-requests/<sender_id>/<receiver_id>/update"
             }
         })
 
@@ -222,4 +230,41 @@ def setup_routes(app):
             return jsonify({"error": "Failed to create friendship"}), 500
         if "error" in result:
             return jsonify(result), 400
-        return jsonify(result), 201 
+        return jsonify(result), 201
+
+    @app.route('/api/users/<int:user_id1>/friend-requests/<int:user_id2>', methods=['POST'])
+    def send_friend_request(user_id1, user_id2):
+        """Send a friend request from user_id1 to user_id2"""
+        result = create_friend_request(user_id1, user_id2)
+        if result is None:
+            return jsonify({"error": "Failed to create friend request"}), 500
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result), 201
+
+    @app.route('/api/users/<int:user_id>/friend-requests', methods=['GET'])
+    def get_user_friend_requests(user_id):
+        """Get all pending friend requests for a user"""
+        requests = get_pending_friend_requests(user_id)
+        if requests is None:
+            return jsonify({"error": "Failed to fetch friend requests"}), 500
+        return jsonify(requests)
+
+    @app.route('/api/friend-requests/<int:sender_id>/<int:receiver_id>/update', methods=['POST'])
+    def update_friend_request_status(sender_id, receiver_id):
+        """Update a friend request's status (accept/reject)"""
+        data = request.get_json()
+        if not data or 'status' not in data:
+            return jsonify({"error": "status is required"}), 400
+            
+        status = data['status']
+        
+        if status not in ['Accepted', 'Rejected']:
+            return jsonify({"error": "Status must be either 'Accepted' or 'Rejected'"}), 400
+            
+        result = update_friend_request(sender_id, receiver_id, status)
+        if result is None:
+            return jsonify({"error": "Failed to update friend request"}), 500
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result) 

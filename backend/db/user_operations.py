@@ -482,4 +482,241 @@ def create_friendship(user_id1, user_id2):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def create_friend_request(sender_id, receiver_id):
+    """
+    Create a friend request from sender to receiver.
+    
+    Args:
+        sender_id (int): The ID of the user sending the request
+        receiver_id (int): The ID of the user receiving the request
+        
+    Returns:
+        dict: A dictionary containing the friend request details if successful, None if failed
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            print("Failed to get database connection")
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Check if users exist
+        cursor.execute("SELECT user_id, full_name FROM User WHERE user_id IN (%s, %s)", (sender_id, receiver_id))
+        users = cursor.fetchall()
+        if len(users) != 2:
+            print(f"Users not found: {users}")
+            return {"error": "One or both users do not exist"}
+            
+        # Check if friendship already exists
+        cursor.execute("""
+            SELECT * FROM Friendships 
+            WHERE (user1_id = %s AND user2_id = %s) 
+            OR (user1_id = %s AND user2_id = %s)
+        """, (sender_id, receiver_id, receiver_id, sender_id))
+        if cursor.fetchone():
+            print("Friendship already exists")
+            return {"error": "Friendship already exists"}
+            
+        # Check if a pending request already exists
+        cursor.execute("""
+            SELECT * FROM FriendRequests 
+            WHERE sender_id = %s AND receiver_id = %s AND status = 'Pending'
+        """, (sender_id, receiver_id))
+        if cursor.fetchone():
+            print("Pending request already exists")
+            return {"error": "Friend request already exists"}
+            
+        # Create the friend request
+        try:
+            cursor.execute("""
+                INSERT INTO FriendRequests (sender_id, receiver_id, status, sent_at) 
+                VALUES (%s, %s, 'Pending', NOW())
+            """, (sender_id, receiver_id))
+            connection.commit()
+            print("Friend request created successfully")
+        except Exception as e:
+            print(f"Error creating friend request: {str(e)}")
+            connection.rollback()
+            return None
+        
+        # Get the created request details
+        cursor.execute("""
+            SELECT 
+                fr.sender_id,
+                fr.receiver_id,
+                fr.status,
+                fr.sent_at,
+                u1.full_name as sender_name,
+                u2.full_name as receiver_name
+            FROM 
+                FriendRequests fr
+            JOIN 
+                User u1 ON fr.sender_id = u1.user_id
+            JOIN 
+                User u2 ON fr.receiver_id = u2.user_id
+            WHERE 
+                fr.sender_id = %s AND fr.receiver_id = %s AND fr.status = 'Pending'
+        """, (sender_id, receiver_id))
+        
+        request = cursor.fetchone()
+        if request and request['sent_at']:
+            request['sent_at'] = request['sent_at'].strftime('%Y-%m-%d %H:%M:%S')
+            
+        return request
+        
+    except Exception as e:
+        print(f"Error in create_friend_request: {str(e)}")
+        if connection:
+            connection.rollback()
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def get_pending_friend_requests(user_id):
+    """
+    Get all pending friend requests for a user.
+    
+    Args:
+        user_id (int): The ID of the user
+        
+    Returns:
+        list: A list of dictionaries containing pending friend requests
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        cursor.execute("""
+            SELECT 
+                fr.sender_id,
+                fr.receiver_id,
+                fr.status,
+                fr.sent_at,
+                u1.full_name as sender_name,
+                u2.full_name as receiver_name
+            FROM 
+                FriendRequests fr
+            JOIN 
+                User u1 ON fr.sender_id = u1.user_id
+            JOIN 
+                User u2 ON fr.receiver_id = u2.user_id
+            WHERE 
+                fr.receiver_id = %s
+                AND fr.status = 'Pending'
+            ORDER BY 
+                fr.sent_at DESC
+        """, (user_id,))
+        
+        requests = cursor.fetchall()
+        
+        # Format timestamps
+        for request in requests:
+            if request['sent_at']:
+                request['sent_at'] = request['sent_at'].strftime('%Y-%m-%d %H:%M:%S')
+                
+        return requests
+        
+    except Exception as e:
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def update_friend_request(sender_id, receiver_id, new_status):
+    """
+    Update a friend request's status.
+    
+    Args:
+        sender_id (int): The ID of the user who sent the request
+        receiver_id (int): The ID of the user who received the request
+        new_status (str): The new status ('Accepted' or 'Rejected')
+        
+    Returns:
+        dict: A dictionary containing the updated friend request details if successful, None if failed
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Get the request details
+        cursor.execute("""
+            SELECT * FROM FriendRequests 
+            WHERE sender_id = %s AND receiver_id = %s AND status = 'Pending'
+        """, (sender_id, receiver_id))
+        
+        request = cursor.fetchone()
+        if not request:
+            return {"error": "Friend request not found or already processed"}
+            
+        # Update the request status
+        cursor.execute("""
+            UPDATE FriendRequests 
+            SET status = %s
+            WHERE sender_id = %s AND receiver_id = %s
+        """, (new_status, sender_id, receiver_id))
+        
+        # If accepted, create the friendship
+        if new_status == 'Accepted':
+            friendship = create_friendship(sender_id, receiver_id)
+            if not friendship:
+                connection.rollback()
+                return {"error": "Failed to create friendship"}
+        
+        connection.commit()
+        
+        # Get the updated request details
+        cursor.execute("""
+            SELECT 
+                fr.sender_id,
+                fr.receiver_id,
+                fr.status,
+                fr.sent_at,
+                u1.full_name as sender_name,
+                u2.full_name as receiver_name
+            FROM 
+                FriendRequests fr
+            JOIN 
+                User u1 ON fr.sender_id = u1.user_id
+            JOIN 
+                User u2 ON fr.receiver_id = u2.user_id
+            WHERE 
+                fr.sender_id = %s AND fr.receiver_id = %s
+        """, (sender_id, receiver_id))
+        
+        updated_request = cursor.fetchone()
+        
+        # Format timestamp
+        if updated_request and updated_request['sent_at']:
+            updated_request['sent_at'] = updated_request['sent_at'].strftime('%Y-%m-%d %H:%M:%S')
+            
+        return updated_request
+        
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 
