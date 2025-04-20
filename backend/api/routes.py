@@ -1,5 +1,5 @@
 from flask import jsonify, request
-from db.user_operations import get_all_users, get_user_by_id, get_user_recommendations, verify_login, create_user, get_friend_recommendations, get_user_details, update_user_details
+from db.user_operations import get_all_users, get_user_by_id, get_user_recommendations, verify_login, create_user, get_friend_recommendations, get_user_details, update_user_details, get_user_friends, create_friendship
 from db.group_operations import get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group
 from db.chat_operations import send_message, get_chat_messages, get_group_messages, send_group_message
 
@@ -23,7 +23,9 @@ def setup_routes(app):
                 "group_messages": "/api/groups/<group_id>/messages",
                 "send_group_message": "/api/groups/<group_id>/messages/send",
                 "user_groups": "/api/users/<user_id>/groups",
-                "add_user_to_group": "/api/groups/<group_id>/add-user"
+                "add_user_to_group": "/api/groups/<group_id>/add-user",
+                "user_friends": "/api/users/<user_id>/friends",
+                "create_friendship": "/api/users/<user_id1>/friends/<user_id2>"
             }
         })
 
@@ -123,6 +125,13 @@ def setup_routes(app):
             return jsonify({"error": "Failed to fetch user groups"}), 500
         return jsonify(groups)
 
+    @app.route('/api/users/<int:user_id>/friends', methods=['GET'])
+    def user_friends(user_id):
+        friends = get_user_friends(user_id)
+        if friends is None:
+            return jsonify({"error": "Failed to fetch user friends"}), 500
+        return jsonify(friends)
+
     # Group Routes
     @app.route('/api/groups', methods=['GET'])
     def groups():
@@ -201,6 +210,16 @@ def setup_routes(app):
         user_id = data['user_id']
         
         result = add_user_to_group(user_id, group_id)
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result), 201
+
+    @app.route('/api/users/<int:user_id1>/friends/<int:user_id2>', methods=['POST'])
+    def create_user_friendship(user_id1, user_id2):
+        """Create a friendship between two users"""
+        result = create_friendship(user_id1, user_id2)
+        if result is None:
+            return jsonify({"error": "Failed to create friendship"}), 500
         if "error" in result:
             return jsonify(result), 400
         return jsonify(result), 201 

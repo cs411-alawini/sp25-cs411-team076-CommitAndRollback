@@ -318,4 +318,168 @@ def update_user_details(user_id, user_data):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def get_user_friends(user_id):
+    """
+    Get all friends of a user.
+    
+    Args:
+        user_id (int): The ID of the user
+        
+    Returns:
+        list: A list of dictionaries containing all friends of the user
+    """
+    connection = None
+    cursor = None
+    try:
+        print(f"Getting friends for user_id: {user_id}")
+        connection = get_connection()
+        if not connection:
+            print("Failed to get database connection")
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Get all friends of the user
+        query = """
+            SELECT 
+                u.user_id,
+                u.full_name,
+                u.bio,
+                u.location,
+                u.created_at,
+                f.chat_id,
+                CASE 
+                    WHEN f.user1_id = %s THEN f.user2_id
+                    ELSE f.user1_id
+                END as friend_id
+            FROM 
+                User u
+            JOIN 
+                Friendships f ON (f.user1_id = %s AND f.user2_id = u.user_id) 
+                OR (f.user2_id = %s AND f.user1_id = u.user_id)
+            ORDER BY 
+                u.full_name
+        """
+        print(f"Executing query: {query}")
+        print(f"With parameters: {(user_id, user_id, user_id)}")
+        
+        cursor.execute(query, (user_id, user_id, user_id))
+        friends = cursor.fetchall()
+        print(f"Found {len(friends) if friends else 0} friends")
+        
+        if friends:
+            print("First friend data:", friends[0])
+        
+        # Format the created_at timestamps
+        for friend in friends:
+            if friend['created_at']:
+                friend['created_at'] = friend['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+                
+        return friends
+    except Exception as e:
+        print(f"Error in get_user_friends: {str(e)}")
+        print(f"Error type: {type(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def create_friendship(user_id1, user_id2):
+    """
+    Create a friendship between two users.
+    
+    Args:
+        user_id1 (int): The ID of the first user
+        user_id2 (int): The ID of the second user
+        
+    Returns:
+        dict: A dictionary containing the friendship details if successful, None if failed
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Check if Chat table exists
+        cursor.execute("SHOW TABLES LIKE 'Chat'")
+        if not cursor.fetchone():
+            return {"error": "Chat table does not exist"}
+            
+        # Check if users exist
+        cursor.execute("SELECT user_id, full_name FROM User WHERE user_id IN (%s, %s)", (user_id1, user_id2))
+        users = cursor.fetchall()
+        if len(users) != 2:
+            return {"error": "One or both users do not exist"}
+            
+        # Get user names for chat name
+        user_names = {user['user_id']: user['full_name'] for user in users}
+        chat_name = f"Chat between {user_names[user_id1]} and {user_names[user_id2]}"
+            
+        # Check if friendship already exists
+        cursor.execute("""
+            SELECT * FROM Friendships 
+            WHERE (user1_id = %s AND user2_id = %s) 
+            OR (user1_id = %s AND user2_id = %s)
+        """, (user_id1, user_id2, user_id2, user_id1))
+        if cursor.fetchone():
+            return {"error": "Friendship already exists"}
+            
+        # Get the latest chat_id and increment by 1
+        cursor.execute("SELECT MAX(chat_id) as max_chat_id FROM Chat")
+        result = cursor.fetchone()
+        next_chat_id = (result['max_chat_id'] or 0) + 1
+            
+        # Create a new chat for the friendship
+        cursor.execute("""
+            INSERT INTO Chat (chat_id, chat_name) 
+            VALUES (%s, %s)
+        """, (next_chat_id, chat_name))
+        
+        # Create the friendship
+        cursor.execute("""
+            INSERT INTO Friendships (user1_id, user2_id, chat_id) 
+            VALUES (%s, %s, %s)
+        """, (user_id1, user_id2, next_chat_id))
+        
+        connection.commit()
+        
+        # Get the created friendship details
+        cursor.execute("""
+            SELECT 
+                f.user1_id,
+                f.user2_id,
+                f.chat_id,
+                u1.full_name as user1_name,
+                u2.full_name as user2_name,
+                c.chat_name
+            FROM 
+                Friendships f
+            JOIN 
+                User u1 ON f.user1_id = u1.user_id
+            JOIN 
+                User u2 ON f.user2_id = u2.user_id
+            JOIN
+                Chat c ON f.chat_id = c.chat_id
+            WHERE 
+                f.user1_id = %s AND f.user2_id = %s
+        """, (user_id1, user_id2))
+        
+        return cursor.fetchone()
+        
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 
