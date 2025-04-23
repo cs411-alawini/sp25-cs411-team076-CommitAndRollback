@@ -14,7 +14,9 @@ import {
   ListItemText,
   Chip,
   Grid,
-  CircularProgress
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import { 
   Send as SendIcon, 
@@ -76,6 +78,7 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   console.log("GroupView rendered with groupId:", groupId);
@@ -218,9 +221,10 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
   }, [messages]);
   
   const handleSendMessage = async () => {
-    if (!messageText.trim() || !groupId) return;
+    if (!groupId) return;
     
     setSendingMessage(true);
+    setSendError(null);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const userId = user.user_id;
     
@@ -244,8 +248,15 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
         setMessages([...messages, newMessage]);
         setMessageText('');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
+      
+      // Display the exact error message from the backend when status is 400
+      if (error.response && error.response.status === 400) {
+        setSendError(error.response.data.error || 'Failed to send message');
+      } else {
+        setSendError('Failed to send message. Please try again.');
+      }
     } finally {
       setSendingMessage(false);
     }
@@ -391,35 +402,42 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
           </Paper>
           
           {/* Message Input */}
-          <Paper elevation={0} sx={{ p: 2, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1 }} className="message-input">
-            <TextField
-              fullWidth
-              placeholder="Type a message..."
-              variant="outlined"
-              size="small"
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              disabled={sendingMessage}
-              sx={{ 
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 4
-                }
-              }}
-            />
-            <IconButton 
-              color="primary" 
-              onClick={handleSendMessage}
-              disabled={!messageText.trim() || sendingMessage}
-              className="send-button"
-            >
-              {sendingMessage ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
-            </IconButton>
+          <Paper elevation={0} sx={{ p: 2, borderRadius: 2, display: 'flex', flexDirection: 'column', gap: 1 }} className="message-input">
+            {sendError && (
+              <Alert severity="error" sx={{ mb: 1 }}>
+                {sendError}
+              </Alert>
+            )}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TextField
+                fullWidth
+                placeholder="Type a message..."
+                variant="outlined"
+                size="small"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                disabled={sendingMessage}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 4
+                  }
+                }}
+              />
+              <IconButton 
+                color="primary" 
+                onClick={handleSendMessage}
+                disabled={sendingMessage}
+                className="send-button"
+              >
+                {sendingMessage ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
+              </IconButton>
+            </Box>
           </Paper>
         </Grid>
         

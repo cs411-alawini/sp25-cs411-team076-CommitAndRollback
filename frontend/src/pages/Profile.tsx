@@ -54,6 +54,11 @@ interface UserDetails {
   user_id: number;
 }
 
+interface Interest {
+  interest_id: number;
+  interest_name: string;
+}
+
 const Profile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -69,6 +74,8 @@ const Profile = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [availableInterests, setAvailableInterests] = useState<string[]>([]);
+  const [allInterests, setAllInterests] = useState<Interest[]>([]);
   
   const drawerWidth = 280;
   const collapsedDrawerWidth = 80;
@@ -89,6 +96,21 @@ const Profile = () => {
         const userResponse = await axios.get(`${API_URL}/users/${userId}`);
         if (userResponse.data) {
           setUserDetails(userResponse.data);
+        }
+        
+        // Fetch all available interests
+        const interestsResponse = await axios.get(`${API_URL}/interests`);
+        if (interestsResponse.data) {
+          // Store all interests with their IDs
+          setAllInterests(interestsResponse.data);
+          
+          // Extract unique interest names
+          const uniqueInterests = Array.from(
+            new Set(
+              interestsResponse.data.map((interest: Interest) => interest.interest_name.trim())
+            )
+          ).sort() as string[];
+          setAvailableInterests(uniqueInterests);
         }
         
         setLoading(false);
@@ -149,9 +171,12 @@ const Profile = () => {
   };
 
   const handleInterestsChange = (_event: React.SyntheticEvent, newValue: string[]) => {
+    // Remove any duplicates from the selected interests
+    const uniqueInterests = Array.from(new Set(newValue.map(interest => interest.trim())));
+    
     setEditFormData(prev => ({
       ...prev,
-      interests: newValue
+      interests: uniqueInterests
     }));
   };
 
@@ -162,14 +187,29 @@ const Profile = () => {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       
+      // Get current user details first to get the password and created_at
+      const currentUserResponse = await axios.get(`${API_URL}/users/${user.user_id}`);
+      if (!currentUserResponse.data) {
+        throw new Error('Failed to fetch current user details');
+      }
+      
       // Separate interests from other user details
-      const { interests, ...userDetails } = editFormData;
+      const { interests, ...userDetailsToUpdate } = editFormData;
       
       // Only send the request if there are fields to update
-      if (Object.keys(userDetails).length > 0) {
+      if (Object.keys(userDetailsToUpdate).length > 0) {
+        // Include password and created_at from current user data
+        const updatedUserData = {
+          ...userDetailsToUpdate,
+          password: currentUserResponse.data.password,
+          created_at: currentUserResponse.data.created_at
+        };
+        
+        console.log('Updating user details with:', updatedUserData);
+        
         const response = await axios.patch(
           `${API_URL}/users/${user.user_id}/details`,
-          userDetails
+          updatedUserData
         );
 
         if (response.data) {
@@ -182,16 +222,29 @@ const Profile = () => {
 
       // Separately update interests if they were changed
       if (interests !== undefined) {
+        // Convert interest names to interest IDs
+        const interestIds = interests.map(interestName => {
+          const interest = allInterests.find(i => 
+            i.interest_name.trim().toLowerCase() === interestName.trim().toLowerCase()
+          );
+          return interest ? interest.interest_id : null;
+        }).filter(id => id !== null);
+        
         await axios.patch(
           `${API_URL}/users/${user.user_id}/interests`,
-          { interests }
+          { interests: interestIds }
         );
       }
 
       handleEditClose();
     } catch (error: any) {
       console.error('Update error:', error);
-      setEditError(error.response?.data?.error || 'Failed to update profile');
+      // Display exact error message from backend when status is 400
+      if (error.response && error.response.status === 400) {
+        setEditError(error.response.data.error || 'Failed to update profile');
+      } else {
+        setEditError(error.message || 'Failed to update profile');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -224,7 +277,13 @@ const Profile = () => {
       navigate('/login');
     } catch (error: any) {
       console.error('Delete account error:', error);
-      setDeleteError(error.response?.data?.error || 'Failed to delete account');
+      
+      // Display the exact error message from the backend when status is 400
+      if (error.response && error.response.status === 400) {
+        setDeleteError(error.response.data.error || 'Failed to delete account');
+      } else {
+        setDeleteError(error.response?.data?.error || 'Failed to delete account');
+      }
       setIsDeleting(false);
     }
   };
@@ -334,19 +393,6 @@ const Profile = () => {
             </ListItemIcon>
             {drawerOpen && <ListItemText primary="Dashboard" />}
           </ListItem>
-          <ListItem 
-            component="div"
-            onClick={() => navigate('/me')}
-            sx={{ 
-              cursor: 'pointer',
-              '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
-            }}
-          >
-            <ListItemIcon>
-              <PeopleIcon />
-            </ListItemIcon>
-            {drawerOpen && <ListItemText primary="Profile" />}
-          </ListItem>
         </List>
         
         <Box sx={{ position: 'absolute', bottom: 0, width: '100%', bgcolor: '#f0e6f5' }}>
@@ -422,9 +468,9 @@ const Profile = () => {
           >
             <MenuItem onClick={() => {
               handleMenuClose();
-              navigate('/me');
+              navigate('/dashboard');
             }}>
-              Profile
+              Dashboard
             </MenuItem>
             <MenuItem onClick={() => {
               handleMenuClose();
@@ -578,15 +624,14 @@ const Profile = () => {
               />
               <Autocomplete
                 multiple
-                freeSolo
-                options={[]}
+                options={availableInterests}
                 value={editFormData.interests || []}
                 onChange={handleInterestsChange}
                 renderInput={(params) => (
                   <TextField
                     {...params}
                     label="Interests"
-                    placeholder="Add interests"
+                    placeholder="Select interests"
                   />
                 )}
                 renderTags={(value: string[], getTagProps) =>

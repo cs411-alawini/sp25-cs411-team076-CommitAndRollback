@@ -284,22 +284,20 @@ def update_user_details(user_id, user_data):
         
         cursor.execute("""
             UPDATE User 
-            SET password = %s,
+            SET 
                 full_name = %s,
                 gender = %s,
                 age = %s,
                 location = %s,
-                bio = %s,
-                created_at = %s
+                bio = %s
             WHERE user_id = %s
         """, (
-            user_data['password'],
+
             user_data['full_name'],
             user_data['gender'],
             user_data['age'],
             user_data['location'],
             user_data['bio'],
-            user_data['created_at'],
             user_id
         ))
         

@@ -99,7 +99,13 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
-      setError(error.response?.data?.message || error.message || 'An error occurred during authentication. Please try again.');
+      
+      // Display the exact error message from the backend when status is 400
+      if (error.response && error.response.status === 400) {
+        setError(error.response.data.error || error.response.data.message || 'Invalid request. Please check your information.');
+      } else {
+        setError(error.response?.data?.message || error.message || 'An error occurred during authentication. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -260,11 +266,11 @@ const Auth = () => {
                     label="Gender"
                     onChange={(e) => setGender(e.target.value)}
                   >
-                    <MenuItem value="">Prefer not to say</MenuItem>
+                    <MenuItem value="">Select gender</MenuItem>
                     <MenuItem value="Male">Male</MenuItem>
                     <MenuItem value="Female">Female</MenuItem>
-                    <MenuItem value="Non-binary">Non-binary</MenuItem>
                     <MenuItem value="Other">Other</MenuItem>
+                    <MenuItem value="Prefer not to say">Prefer not to say</MenuItem>
                   </Select>
                 </FormControl>
                 
