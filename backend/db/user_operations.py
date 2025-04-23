@@ -776,4 +776,116 @@ def get_sent_friend_requests(user_id):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def search_users(search_term, interests=None, user_id=None):
+    """
+    Search for users by name and filter by interests.
+    
+    Args:
+        search_term (str): The search term to match against user names
+        interests (list): Optional list of interest IDs to filter by
+        user_id (int): Optional ID of the current user to exclude from results
+        
+    Returns:
+        list: A list of users matching the search criteria
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Base query without interest filtering
+        if interests and len(interests) > 0:
+            # Query with interest filtering
+            placeholders = ', '.join(['%s'] * len(interests))
+            
+            query = f"""
+                SELECT DISTINCT u.user_id, u.full_name, u.location, u.bio, u.gender, 
+                       (SELECT COUNT(*) FROM User_Interests ui2 
+                        WHERE ui2.user_id = u.user_id AND ui2.interest_id IN ({placeholders})) as matching_interests
+                FROM User u
+                JOIN User_Interests ui ON u.user_id = ui.user_id
+                WHERE u.full_name LIKE %s
+                AND ui.interest_id IN ({placeholders})
+            """
+            
+            # Exclude current user if provided
+            if user_id:
+                query += " AND u.user_id != %s"
+                params = ['%' + search_term + '%'] + interests + interests + [user_id]
+            else:
+                params = ['%' + search_term + '%'] + interests + interests
+                
+            cursor.execute(query, params)
+        else:
+            # Query without interest filtering
+            if user_id:
+                cursor.execute("""
+                    SELECT u.user_id, u.full_name, u.location, u.bio, u.gender, 0 as matching_interests
+                    FROM User u
+                    WHERE u.full_name LIKE %s
+                    AND u.user_id != %s
+                """, ('%' + search_term + '%', user_id))
+            else:
+                cursor.execute("""
+                    SELECT u.user_id, u.full_name, u.location, u.bio, u.gender, 0 as matching_interests
+                    FROM User u
+                    WHERE u.full_name LIKE %s
+                """, ('%' + search_term + '%',))
+                
+        users = cursor.fetchall()
+        
+        # If we have users and interests were specified, get the interest names for each user
+        if users and interests and len(interests) > 0:
+            for user in users:
+                cursor.execute("""
+                    SELECT i.interest_name 
+                    FROM Interests i
+                    JOIN User_Interests ui ON i.interest_id = ui.interest_id
+                    WHERE ui.user_id = %s
+                """, (user['user_id'],))
+                
+                interests_data = cursor.fetchall()
+                user['interests'] = [interest['interest_name'] for interest in interests_data]
+        
+        return users
+    except Exception as e:
+        print(f"Error in search_users: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+            
+def get_all_interests():
+    """
+    Get all available interests.
+    
+    Returns:
+        list: A list of all interests
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        cursor.execute("SELECT * FROM Interests ORDER BY interest_name")
+        interests = cursor.fetchall()
+        return interests
+    except Exception as e:
+        print(f"Error in get_all_interests: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 

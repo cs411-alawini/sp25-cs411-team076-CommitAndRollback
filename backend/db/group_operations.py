@@ -312,3 +312,59 @@ def get_group_events(group_id):
             cursor.close()
         if connection:
             connection.close()
+
+def remove_user_from_group(group_id, user_id):
+    """
+    Remove a user from a group.
+    
+    Args:
+        group_id (int): The ID of the group
+        user_id (int): The ID of the user to remove
+        
+    Returns:
+        dict: A dictionary containing a success message if successful, None if failed
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # First verify the group exists
+        cursor.execute("SELECT * FROM `Group` WHERE group_id = %s", (group_id,))
+        group = cursor.fetchone()
+        if not group:
+            return {"error": "Group not found"}
+            
+        # Then verify the user is a member of the group
+        cursor.execute("""
+            SELECT * FROM Group_Members 
+            WHERE group_id = %s AND user_id = %s
+        """, (group_id, user_id))
+        
+        if not cursor.fetchone():
+            return {"error": "User is not a member of this group"}
+            
+        # Remove user from the group
+        cursor.execute("""
+            DELETE FROM Group_Members 
+            WHERE group_id = %s AND user_id = %s
+        """, (group_id, user_id))
+        
+        connection.commit()
+        
+        return {"message": "User removed from group successfully"}
+        
+    except Exception as e:
+        print(f"Error in remove_user_from_group: {str(e)}")
+        if connection:
+            connection.rollback()
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close() 
