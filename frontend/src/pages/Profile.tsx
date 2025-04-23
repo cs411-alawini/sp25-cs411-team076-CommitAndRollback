@@ -21,10 +21,12 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   TextField,
   Stack,
   Autocomplete,
+  Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
@@ -36,6 +38,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
 import EditIcon from '@mui/icons-material/Edit';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 
 // Get API URL from environment variables
@@ -62,6 +65,10 @@ const Profile = () => {
   const [editFormData, setEditFormData] = useState<Partial<UserDetails>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   
   const drawerWidth = 280;
   const collapsedDrawerWidth = 80;
@@ -187,6 +194,38 @@ const Profile = () => {
       setEditError(error.response?.data?.error || 'Failed to update profile');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      setDeleteError('Please type DELETE to confirm');
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user.user_id;
+      
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+      
+      await axios.delete(`${API_URL}/users/${userId}`);
+      
+      // Clear user data from local storage
+      localStorage.removeItem('user');
+      localStorage.removeItem('newSignup');
+      
+      // Redirect to login page
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      setDeleteError(error.response?.data?.error || 'Failed to delete account');
+      setIsDeleting(false);
     }
   };
 
@@ -393,6 +432,19 @@ const Profile = () => {
             }}>
               Logout
             </MenuItem>
+            <Divider />
+            <MenuItem 
+              onClick={() => {
+                handleMenuClose();
+                setDeleteDialogOpen(true);
+              }}
+              sx={{ color: 'error.main' }}
+            >
+              <ListItemIcon>
+                <DeleteIcon fontSize="small" color="error" />
+              </ListItemIcon>
+              Delete Account
+            </MenuItem>
           </Menu>
         </Box>
 
@@ -562,6 +614,54 @@ const Profile = () => {
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Account Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ color: 'error.main' }}>Delete Account</DialogTitle>
+          <DialogContent>
+            <DialogContentText color="text.primary">
+              This action cannot be undone. All your data will be permanently deleted.
+            </DialogContentText>
+            <DialogContentText color="text.primary" sx={{ mt: 2, mb: 3 }}>
+              To confirm, please type <strong>DELETE</strong> in the field below:
+            </DialogContentText>
+            <TextField
+              fullWidth
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Type DELETE to confirm"
+              variant="outlined"
+              sx={{ mb: 2 }}
+            />
+            {deleteError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {deleteError}
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleDeleteAccount}
+              variant="contained" 
+              color="error"
+              disabled={isDeleting}
+              startIcon={<DeleteIcon />}
+            >
+              {isDeleting ? 'Deleting...' : 'Confirm Delete'}
             </Button>
           </DialogActions>
         </Dialog>

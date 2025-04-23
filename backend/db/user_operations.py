@@ -888,4 +888,82 @@ def get_all_interests():
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def delete_user_account(user_id):
+    """
+    Delete a user account and all their associated data.
+    
+    Args:
+        user_id (int): The ID of the user to delete
+        
+    Returns:
+        dict: A dictionary with success/error message
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return {"error": "Database connection failed"}
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Check if user exists
+        cursor.execute("SELECT user_id FROM User WHERE user_id = %s", (user_id,))
+        if not cursor.fetchone():
+            return {"error": "User not found"}
+        
+        # Start transaction
+        connection.begin()
+        
+        # Delete user's friend requests
+        cursor.execute("DELETE FROM FriendRequests WHERE sender_id = %s OR receiver_id = %s", 
+                      (user_id, user_id))
+        
+        # Delete user's messages in chats
+        cursor.execute("DELETE FROM Messages WHERE sender_id = %s", (user_id,))
+        
+        # Delete user's interests
+        cursor.execute("DELETE FROM User_Interests WHERE user_id = %s", (user_id,))
+        
+        # Get all friendships to delete associated chats
+        cursor.execute("""
+            SELECT chat_id FROM Friendships 
+            WHERE user1_id = %s OR user2_id = %s
+        """, (user_id, user_id))
+        chat_ids = [row['chat_id'] for row in cursor.fetchall()]
+        
+        # Delete friendships
+        cursor.execute("DELETE FROM Friendships WHERE user1_id = %s OR user2_id = %s", 
+                      (user_id, user_id))
+        
+        # Delete chats associated with the friendships
+        if chat_ids:
+            placeholders = ', '.join(['%s'] * len(chat_ids))
+            cursor.execute(f"DELETE FROM Chat WHERE chat_id IN ({placeholders})", chat_ids)
+            
+        # Remove user from groups
+        cursor.execute("DELETE FROM Group_Members WHERE user_id = %s", (user_id,))
+        
+        # Finally delete the user
+        cursor.execute("DELETE FROM User WHERE user_id = %s", (user_id,))
+        
+        # Commit transaction
+        connection.commit()
+        
+        return {
+            "success": True,
+            "message": "User account deleted successfully"
+        }
+        
+    except Exception as e:
+        print(f"Error in delete_user_account: {str(e)}")
+        if connection:
+            connection.rollback()
+        return {"error": str(e)}
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 
