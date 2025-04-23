@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import GroupPage from './pages/GroupPage';
+import FriendPage from './pages/FriendPage';
 
 const App: React.FC = () => {
   // Check if user is authenticated
@@ -35,6 +37,22 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/groups/:groupId" 
+          element={
+            <ProtectedRoute>
+              <GroupPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/friends/:friendId" 
+          element={
+            <ProtectedRoute>
+              <FriendPage />
             </ProtectedRoute>
           } 
         />

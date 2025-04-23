@@ -18,6 +18,13 @@ import {
   Tooltip,
   Menu,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Stack,
+  Autocomplete,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
@@ -51,6 +58,10 @@ const Profile = () => {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<Partial<UserDetails>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   
   const drawerWidth = 280;
   const collapsedDrawerWidth = 80;
@@ -103,6 +114,80 @@ const Profile = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleEditClick = () => {
+    setEditFormData({
+      full_name: userDetails?.full_name || '',
+      age: userDetails?.age || 0,
+      gender: userDetails?.gender || '',
+      location: userDetails?.location || '',
+      bio: userDetails?.bio || '',
+      interests: userDetails?.interests || [],
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditClose = () => {
+    setEditDialogOpen(false);
+    setEditError(null);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: name === 'age' ? parseInt(value) || 0 : value
+    }));
+  };
+
+  const handleInterestsChange = (_event: React.SyntheticEvent, newValue: string[]) => {
+    setEditFormData(prev => ({
+      ...prev,
+      interests: newValue
+    }));
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setEditError(null);
+
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Separate interests from other user details
+      const { interests, ...userDetails } = editFormData;
+      
+      // Only send the request if there are fields to update
+      if (Object.keys(userDetails).length > 0) {
+        const response = await axios.patch(
+          `${API_URL}/users/${user.user_id}/details`,
+          userDetails
+        );
+
+        if (response.data) {
+          setUserDetails(prev => ({
+            ...response.data,
+            interests: interests || prev?.interests || []
+          }));
+        }
+      }
+
+      // Separately update interests if they were changed
+      if (interests !== undefined) {
+        await axios.patch(
+          `${API_URL}/users/${user.user_id}/interests`,
+          { interests }
+        );
+      }
+
+      handleEditClose();
+    } catch (error: any) {
+      console.error('Update error:', error);
+      setEditError(error.response?.data?.error || 'Failed to update profile');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Show loading state
@@ -343,6 +428,7 @@ const Profile = () => {
                     {userDetails.full_name}
                   </Typography>
                   <IconButton 
+                    onClick={handleEditClick}
                     sx={{ 
                       bgcolor: '#f0e6f5',
                       '&:hover': { bgcolor: '#e1d1e8' }
@@ -395,6 +481,96 @@ const Profile = () => {
             </Box>
           </Box>
         )}
+
+        {/* Edit Profile Dialog */}
+        <Dialog 
+          open={editDialogOpen} 
+          onClose={handleEditClose}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Edit Profile</DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} sx={{ mt: 2 }}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                name="full_name"
+                value={editFormData.full_name || ''}
+                onChange={handleInputChange}
+              />
+              <TextField
+                fullWidth
+                label="Age"
+                name="age"
+                type="number"
+                value={editFormData.age || ''}
+                onChange={handleInputChange}
+              />
+              <TextField
+                fullWidth
+                label="Gender"
+                name="gender"
+                value={editFormData.gender || ''}
+                onChange={handleInputChange}
+              />
+              <TextField
+                fullWidth
+                label="Location"
+                name="location"
+                value={editFormData.location || ''}
+                onChange={handleInputChange}
+              />
+              <TextField
+                fullWidth
+                label="Bio"
+                name="bio"
+                multiline
+                rows={4}
+                value={editFormData.bio || ''}
+                onChange={handleInputChange}
+              />
+              <Autocomplete
+                multiple
+                freeSolo
+                options={[]}
+                value={editFormData.interests || []}
+                onChange={handleInterestsChange}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Interests"
+                    placeholder="Add interests"
+                  />
+                )}
+                renderTags={(value: string[], getTagProps) =>
+                  value.map((option: string, index: number) => (
+                    <Chip
+                      variant="outlined"
+                      label={option}
+                      {...getTagProps({ index })}
+                    />
+                  ))
+                }
+              />
+              {editError && (
+                <Typography color="error" variant="body2">
+                  {editError}
+                </Typography>
+              )}
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleEditClose}>Cancel</Button>
+            <Button 
+              onClick={handleSubmit} 
+              variant="contained"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );

@@ -3,7 +3,7 @@ from db.user_operations import (
     get_all_users, get_user_by_id, get_user_recommendations, verify_login, 
     create_user, get_friend_recommendations, get_user_details, update_user_details, 
     get_user_friends, create_friendship, create_friend_request, 
-    get_pending_friend_requests, update_friend_request
+    get_pending_friend_requests, update_friend_request, get_sent_friend_requests
 )
 from db.group_operations import (
     get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group,
@@ -253,6 +253,14 @@ def setup_routes(app):
         requests = get_pending_friend_requests(user_id)
         if requests is None:
             return jsonify({"error": "Failed to fetch friend requests"}), 500
+        return jsonify(requests)
+
+    @app.route('/api/users/<int:user_id>/sent-friend-requests', methods=['GET'])
+    def get_user_sent_friend_requests(user_id):
+        """Get all friend requests sent by a user"""
+        requests = get_sent_friend_requests(user_id)
+        if requests is None:
+            return jsonify({"error": "Failed to fetch sent friend requests"}), 500
         return jsonify(requests)
 
     @app.route('/api/friend-requests/<int:sender_id>/<int:receiver_id>/update', methods=['POST'])
