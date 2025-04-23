@@ -4,13 +4,14 @@ from db.user_operations import (
     create_user, get_friend_recommendations, get_user_details, update_user_details, 
     get_user_friends, create_friendship, create_friend_request, 
     get_pending_friend_requests, update_friend_request, get_sent_friend_requests,
-    search_users, get_all_interests
+    search_users, get_all_interests, delete_user_account
 )
 from db.group_operations import (
     get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group,
     get_group_members, get_group_events, remove_user_from_group
 )
 from db.chat_operations import send_message, get_chat_messages, get_group_messages, send_group_message
+from db.connection import get_connection
 
 def setup_routes(app):
     # Root route
@@ -346,4 +347,116 @@ def setup_routes(app):
         interests = get_all_interests()
         if interests is None:
             return jsonify({"error": "Failed to fetch interests"}), 500
-        return jsonify(interests) 
+        return jsonify(interests)
+        
+    @app.route('/api/users/<int:user_id>/interests', methods=['POST'])
+    def add_user_interests(user_id):
+        """Add interests for a user"""
+        data = request.get_json()
+        if not data or 'interests' not in data:
+            return jsonify({"error": "interests array is required"}), 400
+            
+        interests = data['interests']
+        
+        # Validate that the user exists
+        user = get_user_by_id(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+            
+        connection = None
+        cursor = None
+        try:
+            connection = get_connection()
+            if not connection:
+                return jsonify({"error": "Database connection failed"}), 500
+                
+            cursor = connection.cursor()
+            
+            # First delete existing user interests
+            cursor.execute("DELETE FROM User_Interests WHERE user_id = %s", (user_id,))
+            
+            # Insert new user interests
+            if interests and len(interests) > 0:
+                insert_values = [(user_id, interest_id) for interest_id in interests]
+                cursor.executemany(
+                    "INSERT INTO User_Interests (user_id, interest_id) VALUES (%s, %s)",
+                    insert_values
+                )
+                
+            connection.commit()
+            return jsonify({
+                "success": True,
+                "message": "User interests updated successfully"
+            })
+            
+        except Exception as e:
+            if connection:
+                connection.rollback()
+            print(f"Error adding user interests: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+                
+    # patch endpoint for updating user interests
+    @app.route('/api/users/<int:user_id>/interests', methods=['PATCH'])
+    def update_user_interests(user_id):
+        """Update interests for a user"""
+        data = request.get_json()
+        if not data or 'interests' not in data:
+            return jsonify({"error": "interests array is required"}), 400
+            
+        interests = data['interests']
+        
+        # Validate that the user exists
+        user = get_user_by_id(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+            
+        connection = None
+        cursor = None
+        try:
+            connection = get_connection()
+            if not connection:
+                return jsonify({"error": "Database connection failed"}), 500
+                
+            cursor = connection.cursor()
+            
+            # First delete existing user interests
+            cursor.execute("DELETE FROM User_Interests WHERE user_id = %s", (user_id,))
+            
+            # Insert new user interests
+            if interests and len(interests) > 0:
+                insert_values = [(user_id, interest_id) for interest_id in interests]
+                cursor.executemany(
+                    "INSERT INTO User_Interests (user_id, interest_id) VALUES (%s, %s)",
+                    insert_values
+                )
+                
+            connection.commit()
+            return jsonify({
+                "success": True,
+                "message": "User interests updated successfully"
+            })
+            
+        except Exception as e:
+            if connection:
+                connection.rollback()
+            print(f"Error updating user interests: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
+    # Add the delete user account endpoint
+    @app.route('/api/users/<int:user_id>', methods=['DELETE'])
+    def delete_user(user_id):
+        """Delete a user account and all associated data"""
+        result = delete_user_account(user_id)
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result), 200 

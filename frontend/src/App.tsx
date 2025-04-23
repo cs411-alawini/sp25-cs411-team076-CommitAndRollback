@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import GroupPage from './pages/GroupPage';
 import FriendPage from './pages/FriendPage';
+import InterestsSelection from './pages/InterestsSelection';
 
 const App: React.FC = () => {
   // Check if user is authenticated
@@ -24,6 +25,14 @@ const App: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/login" element={<Auth />} />
+        <Route 
+          path="/interests-selection" 
+          element={
+            <ProtectedRoute>
+              <InterestsSelection />
+            </ProtectedRoute>
+          } 
+        />
         <Route 
           path="/dashboard" 
           element={
