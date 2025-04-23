@@ -201,11 +201,11 @@ def setup_routes(app):
     @app.route('/api/groups/<int:group_id>/messages/send', methods=['POST'])
     def send_group_message_route(group_id):
         data = request.get_json()
-        if not data or 'user_id' not in data or 'message_text' not in data:
-            return jsonify({"error": "user_id and message_text are required"}), 400
+        if not data or 'user_id' not in data:
+            return jsonify({"error": "user_id is required"}), 400
             
         user_id = data['user_id']
-        message_text = data['message_text']
+        message_text = data.get('message_text', '')  # Default to empty string if not provided
         
         # Validate that the user exists
         user = get_user_by_id(user_id)

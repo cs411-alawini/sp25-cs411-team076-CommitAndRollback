@@ -263,7 +263,7 @@ def send_group_message(group_id, user_id, message_text):
     Args:
         group_id (int): The ID of the group
         user_id (int): The ID of the user sending the message
-        message_text (str): The text of the message
+        message_text (str): The text of the message (can be empty)
         
     Returns:
         dict: A dictionary containing the message information
@@ -308,6 +308,10 @@ def send_group_message(group_id, user_id, message_text):
         # Set sent_at to current timestamp
         sent_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
+        # Ensure message_text is a string
+        if message_text is None:
+            message_text = ''
+            
         # Insert the new message
         cursor.execute("""
             INSERT INTO Messages (
