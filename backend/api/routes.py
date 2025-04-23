@@ -7,7 +7,7 @@ from db.user_operations import (
 )
 from db.group_operations import (
     get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group,
-    get_group_members, get_group_events
+    get_group_members, get_group_events, remove_user_from_group
 )
 from db.chat_operations import send_message, get_chat_messages, get_group_messages, send_group_message
 
@@ -38,7 +38,8 @@ def setup_routes(app):
                 "send_friend_request": "/api/users/<user_id1>/friend-requests/<user_id2>",
                 "update_friend_request": "/api/friend-requests/<sender_id>/<receiver_id>/update",
                 "group_members": "/api/groups/<group_id>/members",
-                "group_events": "/api/groups/<group_id>/events"
+                "group_events": "/api/groups/<group_id>/events",
+                "leave_group": "/api/groups/<group_id>/leave/<user_id>"
             }
         })
 
@@ -300,4 +301,12 @@ def setup_routes(app):
             return jsonify({"error": "Failed to fetch group events"}), 500
         if "error" in events:
             return jsonify(events), 404
-        return jsonify(events) 
+        return jsonify(events)
+
+    @app.route('/api/groups/<int:group_id>/leave/<int:user_id>', methods=['POST'])
+    def leave_group(group_id, user_id):
+        """Remove a user from a group"""
+        success, error = remove_user_from_group(group_id, user_id)
+        if error:
+            return jsonify({"error": error}), 400
+        return jsonify({"message": "Successfully left the group"}) 
