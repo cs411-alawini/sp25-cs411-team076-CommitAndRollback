@@ -49,6 +49,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import axios from 'axios';
 import GroupView from '../components/GroupView';
 import UserSearch from '../components/UserSearch';
+import GroupSearch from '../components/GroupSearch';
 
 // Get API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -1049,6 +1050,7 @@ const Dashboard = () => {
               >
                 <Tab label="Home" />
                 <Tab label="Search Users" />
+                <Tab label="Search Groups" />
               </Tabs>
             </Box>
 
@@ -1389,6 +1391,15 @@ const Dashboard = () => {
                 sentRequests={sentRequests}
                 friendRequests={friendRequests}
                 onSelectFriend={handleFriendSelect}
+              />
+            )}
+            
+            {/* Search Groups Tab */}
+            {activeTab === 2 && (
+              <GroupSearch 
+                onJoinGroup={handleJoinGroup}
+                userGroups={userGroups}
+                joiningGroup={joiningGroup}
               />
             )}
           </>

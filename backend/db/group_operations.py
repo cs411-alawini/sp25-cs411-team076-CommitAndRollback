@@ -367,4 +367,66 @@ def remove_user_from_group(group_id, user_id):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def search_groups(search_term, limit=None, current_user_id=None):
+    """
+    Search for groups by name.
+    
+    Args:
+        search_term (str): The search term to match against group names
+        limit (int, optional): Limit the number of results (default: None)
+        current_user_id (int, optional): The ID of the current user (default: None)
+        
+    Returns:
+        list: A list of dictionaries containing matched groups
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Build the search query
+        query = """
+            SELECT g.*, COUNT(gm.user_id) as member_count,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM Group_Members 
+                WHERE group_id = g.group_id AND user_id = %s
+            ) THEN TRUE ELSE FALSE END as is_member
+            FROM `Group` g 
+            LEFT JOIN Group_Members gm ON g.group_id = gm.group_id 
+            WHERE g.group_name LIKE %s 
+            GROUP BY g.group_id
+            ORDER BY g.group_name ASC
+        """
+        
+        # Add limit if specified
+        if limit:
+            query += " LIMIT %s"
+            
+        # Execute the query with or without limit
+        if limit:
+            cursor.execute(query, (current_user_id or 0, f"%{search_term}%", limit))
+        else:
+            cursor.execute(query, (current_user_id or 0, f"%{search_term}%"))
+            
+        groups = cursor.fetchall()
+        
+        # Format timestamps
+        for group in groups:
+            if group['created_at']:
+                group['created_at'] = group['created_at'].strftime('%a, %d %b %Y %H:%M:%S GMT')
+                
+        return groups
+    except Exception as e:
+        print(f"Error in search_groups: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 
