@@ -312,26 +312,3 @@ def get_group_events(group_id):
             cursor.close()
         if connection:
             connection.close()
-
-def remove_user_from_group(group_id, user_id):
-    """Remove a user from a group"""
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cursor:
-                # Check if user is a member of the group
-                cursor.execute("""
-                    SELECT 1 FROM Group_Members 
-                    WHERE group_id = %s AND user_id = %s
-                """, (group_id, user_id))
-                if not cursor.fetchone():
-                    return None, "User is not a member of this group"
-
-                # Remove user from group
-                cursor.execute("""
-                    DELETE FROM Group_Members 
-                    WHERE group_id = %s AND user_id = %s
-                """, (group_id, user_id))
-                conn.commit()
-                return True, None
-    except Exception as e:
-        return None, str(e) 

@@ -7,7 +7,7 @@ from db.user_operations import (
 )
 from db.group_operations import (
     get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group,
-    get_group_members, get_group_events, remove_user_from_group
+    get_group_members, get_group_events
 )
 from db.chat_operations import send_message, get_chat_messages, get_group_messages, send_group_message
 
@@ -302,11 +302,4 @@ def setup_routes(app):
         if "error" in events:
             return jsonify(events), 404
         return jsonify(events)
-
-    @app.route('/api/groups/<int:group_id>/leave/<int:user_id>', methods=['POST'])
-    def leave_group(group_id, user_id):
-        """Remove a user from a group"""
-        success, error = remove_user_from_group(group_id, user_id)
-        if error:
-            return jsonify({"error": error}), 400
-        return jsonify({"message": "Successfully left the group"}) 
+        
