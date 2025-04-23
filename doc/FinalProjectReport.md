@@ -2,7 +2,7 @@
 
 ---
 
-### 1. Changes from Original Proposal
+### 1. 🔄 Changes from Original Proposal
 In our Stage 1 proposal, the project was envisioned as an interest-based networking application with basic friend request features, interest-based group chats, and user profiles. While the core vision remained consistent, we extended the project scope by implementing additional features to better reflect realistic social platform use-cases:
 
 - We introduced **interest-based group recommendations**, not just for users but also for group discovery, enabling users to find relevant communities more intuitively.
@@ -17,7 +17,7 @@ These enhancements aimed to simulate practical and scalable design decisions fou
 ---
 
 
-### 2. Usefulness Evaluation
+### 2. 🧩 Usefulness Evaluation
 
 We believe our application successfully achieved a strong foundation of usefulness in several key areas:
 
@@ -39,7 +39,7 @@ In summary, the application is functionally complete and meets its intended goal
 ---
 
 
-### 3. Changes to Schema or Data Source
+### 3. 🗂️ Changes to Schema or Data Source
 
 While no major structural changes were made to the overall schema design proposed in Stage 1, we introduced several enhancements and refinements to improve data integrity and enforce stricter application logic. These changes include:
 
@@ -59,7 +59,7 @@ These enhancements ensured that the database not only supported our intended app
 ---
 
 
-### 4. Changes to ER Diagram and Table Implementations
+### 4. 🧱 Changes to ER Diagram and Table Implementations
 
 While the core structure of our ER diagram remained aligned with the initial proposal, several refinements were made to the table implementations in order to better enforce data consistency and reflect real-world application logic.
 
@@ -91,7 +91,7 @@ Overall, while the original design provided a solid foundation, the final implem
 ---
 
 
-### 5. Functionalities Added or Removed
+### 5. ➕➖ Functionalities Added or Removed
 
 All core functionalities proposed in our Stage 1 submission were successfully implemented in the final project. These included user registration, friend request handling, group creation, and messaging features. However, as the project progressed, we identified several opportunities to enhance the application's realism, usability, and robustness. As a result, the following **additional functionalities** were incorporated:
 
@@ -114,7 +114,7 @@ All core functionalities proposed in our Stage 1 submission were successfully im
 --- 
 
 
-### 6. Advanced Database Programs
+### 6. 🧠 Advanced Database Programs
 
 Our application integrates a range of advanced database programming features—including stored procedures, transactions, constraints, and triggers—that directly complement and strengthen the application's functionality, integrity, and real-world usability. These elements are not just backend mechanisms; they are seamlessly tied to frontend actions, ensuring that user interactions are validated and enforced at the database level.
 
@@ -182,7 +182,7 @@ By embedding these advanced database programs into the core of our application a
 ---
 
 
-### 7. Technical Challenges
+### 7. 🛠️ Technical Challenges
 
 Each team member encountered unique technical challenges during the course of this project. These experiences not only contributed to the final product but also offered valuable lessons that future teams can benefit from.
 
@@ -223,7 +223,7 @@ These challenges helped us gain a deeper understanding of building robust, scala
 ---
 
 
-### 8. Other Deviations from Proposal
+### 8. 🧾 Other Deviations from Proposal
 
 While there was no major deviation from the original proposal, one notable addition was the generation of **synthetic datasets** using a custom Python script. This script was developed to populate all key tables—such as `Users`, `FriendRequests`, `Friendships`, `Messages`, and `Group_Members`—with realistic sample data.
 
@@ -233,7 +233,7 @@ This addition was not mentioned in the original proposal but became essential fo
 --- 
 
 
-### 9. Future Work (Beyond the Interface)
+### 9. 🚀 Future Work (Beyond the Interface)
 
 Beyond improving the frontend interface, there are several key areas where the application could be enhanced in future iterations:
 
@@ -257,7 +257,7 @@ Each of these areas offers opportunities to further align the application with r
 ---
 
 
-### 10. Final Division of Labor and Teamwork
+### 10. 🤝 Final Division of Labor and Teamwork
 
 The final division of labor was equally distributed among all four team members, with each contributing approximately **25%** of the overall effort across all major aspects of the project—including frontend development, backend implementation, database design, and testing.
 
