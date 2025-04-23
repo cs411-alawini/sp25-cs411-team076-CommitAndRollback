@@ -719,4 +719,61 @@ def update_friend_request(sender_id, receiver_id, new_status):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def get_sent_friend_requests(user_id):
+    """
+    Get all friend requests sent by a user.
+    
+    Args:
+        user_id (int): The ID of the user who sent the requests
+        
+    Returns:
+        list: A list of dictionaries containing sent friend requests
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        cursor.execute("""
+            SELECT 
+                fr.sender_id,
+                fr.receiver_id,
+                fr.status,
+                fr.sent_at,
+                u1.full_name as sender_name,
+                u2.full_name as receiver_name
+            FROM 
+                FriendRequests fr
+            JOIN 
+                User u1 ON fr.sender_id = u1.user_id
+            JOIN 
+                User u2 ON fr.receiver_id = u2.user_id
+            WHERE 
+                fr.sender_id = %s
+            ORDER BY 
+                fr.sent_at DESC
+        """, (user_id,))
+        
+        requests = cursor.fetchall()
+        
+        # Format timestamps
+        for request in requests:
+            if request['sent_at']:
+                request['sent_at'] = request['sent_at'].strftime('%Y-%m-%d %H:%M:%S')
+                
+        return requests
+        
+    except Exception as e:
+        print(f"Error in get_sent_friend_requests: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 
