@@ -3,11 +3,12 @@ from db.user_operations import (
     get_all_users, get_user_by_id, get_user_recommendations, verify_login, 
     create_user, get_friend_recommendations, get_user_details, update_user_details, 
     get_user_friends, create_friendship, create_friend_request, 
-    get_pending_friend_requests, update_friend_request, get_sent_friend_requests
+    get_pending_friend_requests, update_friend_request, get_sent_friend_requests,
+    search_users, get_all_interests
 )
 from db.group_operations import (
     get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group,
-    get_group_members, get_group_events
+    get_group_members, get_group_events, remove_user_from_group
 )
 from db.chat_operations import send_message, get_chat_messages, get_group_messages, send_group_message
 
@@ -39,7 +40,7 @@ def setup_routes(app):
                 "update_friend_request": "/api/friend-requests/<sender_id>/<receiver_id>/update",
                 "group_members": "/api/groups/<group_id>/members",
                 "group_events": "/api/groups/<group_id>/events",
-                "leave_group": "/api/groups/<group_id>/leave/<user_id>"
+                "remove_user_from_group": "/api/groups/<group_id>/remove-user"
             }
         })
 
@@ -302,4 +303,47 @@ def setup_routes(app):
         if "error" in events:
             return jsonify(events), 404
         return jsonify(events)
+    
+    @app.route('/api/groups/<int:group_id>/remove-user', methods=['POST'])
+    def remove_user_from_group_route(group_id):
+        """Remove a user from a group"""
+        data = request.get_json()
+        if not data or 'user_id' not in data:
+            return jsonify({"error": "user_id is required"}), 400
+            
+        user_id = data['user_id']
         
+        result = remove_user_from_group(group_id, user_id)
+        
+        if result is None:
+            return jsonify({"error": "Failed to remove user from group"}), 500
+        if "error" in result:
+            return jsonify(result), 400
+        return jsonify(result), 200
+        
+    @app.route('/api/users/search', methods=['GET'])
+    def search_users_route():
+        """Search for users by name"""
+        search_term = request.args.get('q', '')
+        user_id = request.args.get('user_id')
+        
+        # Convert user_id to integer if provided
+        current_user_id = None
+        if user_id:
+            try:
+                current_user_id = int(user_id)
+            except ValueError:
+                return jsonify({"error": "User ID must be an integer"}), 400
+        
+        results = search_users(search_term, None, current_user_id)
+        if results is None:
+            return jsonify({"error": "Failed to search users"}), 500
+        return jsonify(results)
+        
+    @app.route('/api/interests', methods=['GET'])
+    def get_interests_route():
+        """Get all available interests"""
+        interests = get_all_interests()
+        if interests is None:
+            return jsonify({"error": "Failed to fetch interests"}), 500
+        return jsonify(interests) 

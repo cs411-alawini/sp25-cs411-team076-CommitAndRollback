@@ -26,7 +26,9 @@ import {
   DialogActions,
   Menu,
   MenuItem,
-  CircularProgress
+  CircularProgress,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
@@ -43,8 +45,10 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MessageIcon from '@mui/icons-material/Message';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import axios from 'axios';
 import GroupView from '../components/GroupView';
+import UserSearch from '../components/UserSearch';
 
 // Get API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -143,6 +147,7 @@ const Dashboard = () => {
   const [showGroupView, setShowGroupView] = useState(false);
   const [sentRequests, setSentRequests] = useState<number[]>([]);
   const [notification, setNotification] = useState<{message: string, type: string} | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
 
   const drawerWidth = 280;
   const collapsedDrawerWidth = 80;
@@ -532,6 +537,80 @@ const Dashboard = () => {
     }
   };
 
+  // Add a handler for leaving groups
+  const handleLeaveGroup = async (groupId: number) => {
+    if (!groupId || isNaN(groupId)) {
+      console.error("Invalid group ID:", groupId);
+      return;
+    }
+    
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user.user_id;
+      
+      if (!userId) {
+        console.error("No user ID found");
+        return;
+      }
+      
+      // Confirm before leaving
+      if (!window.confirm("Are you sure you want to leave this group?")) {
+        return;
+      }
+      
+      // Call the API to leave the group
+      const response = await axios.post(`${API_URL}/groups/${groupId}/remove-user`, {
+        user_id: userId
+      });
+      
+      if (response.data && !response.data.error) {
+        // Remove the group from userGroups state
+        setUserGroups(userGroups.filter(g => g.group_id !== groupId));
+        
+        // Show success notification
+        setNotification({
+          message: "You have left the group successfully",
+          type: "success"
+        });
+        
+        // Auto-hide notification after 3 seconds
+        setTimeout(() => {
+          setNotification(null);
+        }, 3000);
+        
+        // If the user is currently viewing this group, redirect to dashboard
+        if (selectedGroup === groupId) {
+          setSelectedGroup(null);
+          setShowGroupView(false);
+        }
+      } else {
+        // Show error notification
+        setNotification({
+          message: response.data?.error || "Failed to leave group. Please try again.",
+          type: "error"
+        });
+        
+        // Auto-hide notification after 3 seconds
+        setTimeout(() => {
+          setNotification(null);
+        }, 3000);
+      }
+    } catch (error: any) {
+      console.error('Error leaving group:', error);
+      
+      // Show error notification
+      setNotification({
+        message: "Failed to leave group. Please try again.",
+        type: "error"
+      });
+      
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -801,16 +880,48 @@ const Dashboard = () => {
                     bgcolor: selectedGroup === group.group_id ? 'rgba(145, 93, 172, 0.12)' : 'transparent',
                     '&:hover': {
                       bgcolor: 'rgba(145, 93, 172, 0.08)',
-                    }
+                    },
+                    display: 'flex',
+                    justifyContent: 'space-between'
                   }}
-                  onClick={() => handleGroupSelect(group.group_id)}
                 >
-                  {drawerOpen && <Typography component="span" sx={{ mr: 2 }}>#</Typography>}
-                  {drawerOpen ? (
-                    <ListItemText primary={group.group_name} />
-                  ) : (
-                    <Tooltip title={group.group_name} placement="right">
-                      <Typography component="span" sx={{ mr: 2 }}>#</Typography>
+                  <Box 
+                    onClick={() => handleGroupSelect(group.group_id)} 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      flexGrow: 1,
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {drawerOpen && <Typography component="span" sx={{ mr: 2 }}>#</Typography>}
+                    {drawerOpen ? (
+                      <ListItemText primary={group.group_name} />
+                    ) : (
+                      <Tooltip title={group.group_name} placement="right">
+                        <Typography component="span" sx={{ mr: 2 }}>#</Typography>
+                      </Tooltip>
+                    )}
+                  </Box>
+                  {drawerOpen && (
+                    <Tooltip title="Leave group">
+                      <IconButton 
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLeaveGroup(group.group_id);
+                        }}
+                        sx={{ 
+                          fontSize: '0.85rem',
+                          opacity: 0.5,
+                          '&:hover': {
+                            opacity: 1,
+                            color: '#d32f2f'
+                          }
+                        }}
+                      >
+                        <ExitToAppIcon fontSize="small" />
+                      </IconButton>
                     </Tooltip>
                   )}
                 </ListItem>
@@ -850,7 +961,10 @@ const Dashboard = () => {
         component="main" 
         sx={{ 
           flexGrow: 1,
-          p: 6.25,
+          p: 3,
+          pt: 2,
+          pb: 6.25,
+          px: 6.25,
           bgcolor: '#f9f9f9',
           overflow: 'auto',
           transition: 'width 0.3s ease-in-out',
@@ -867,16 +981,10 @@ const Dashboard = () => {
               display: 'flex', 
               justifyContent: 'flex-end', 
               alignItems: 'center', 
-              mb: 4,
-              mt: 1
+              mb: 2,
+              mt: 0
             }}>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <IconButton size="large">
-                  <NotificationsIcon />
-                </IconButton>
-                <IconButton size="large">
-                  <HomeIcon />
-                </IconButton>
                 <IconButton 
                   size="large"
                   onClick={handleMenuClick}
@@ -915,331 +1023,374 @@ const Dashboard = () => {
               </Menu>
             </Box>
 
-            {/* Group Chats Section */}
-            <Box sx={{ mb: 6 }}>
-              <Typography variant="h4" component="h2" sx={{ mb: 3, borderBottom: '1px solid #e0e0e0', pb: 1 }}>
-                Group Chats
-              </Typography>
-              <Grid container spacing={3} sx={{ position: 'relative' }}>
-                {currentGroups.map((group) => (
-                  <Grid item xs={12} sm={6} md={4} key={group.group_id}>
-                    <Card sx={{ 
-                      borderRadius: 2, 
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }}>
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                          <Box sx={{ width: 50, height: 50, bgcolor: '#f5f5f5', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <Typography variant="h6">{group.group_name.charAt(0)}</Typography>
-                          </Box>
-                          <Typography variant="h6" component="h3">
-                            {group.group_name}
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          Created on {new Date(group.created_at).toLocaleDateString()}
-                        </Typography>
-                        {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Interest ID: {group.interest_id}
-                          </Typography>
-                        </Box> */}
-                      </CardContent>
-                      <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-                        {userGroups.some(g => g.group_id === group.group_id) ? (
-                          <Button 
-                            variant="contained" 
-                            size="small"
-                            onClick={() => navigate(`/groups/${group.group_id}`)}
-                            sx={{ 
-                              bgcolor: '#915dac', 
-                              '&:hover': { bgcolor: '#7d4e95' },
-                              borderRadius: 20,
-                              px: 3
-                            }}
-                          >
-                            View Group
-                          </Button>
-                        ) : (
-                          <Button 
-                            variant="contained" 
-                            size="small"
-                            disabled={joiningGroup === group.group_id}
-                            onClick={() => handleJoinGroup(group.group_id)}
-                            sx={{ 
-                              bgcolor: '#915dac', 
-                              '&:hover': { bgcolor: '#7d4e95' },
-                              borderRadius: 20,
-                              px: 3
-                            }}
-                          >
-                            {joiningGroup === group.group_id ? (
-                              <CircularProgress size={20} color="inherit" />
-                            ) : (
-                              'Join Group'
-                            )}
-                          </Button>
-                        )}
-                        <Chip 
-                          label={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <PeopleIcon sx={{ fontSize: 16 }} />
-                              {group.member_count}
-                            </Box>
-                          }
-                          size="small" 
-                          sx={{ bgcolor: '#f5f5f5' }}
-                        />
-                      </CardActions>
-                    </Card>
-                  </Grid>
-                ))}
-                
-                {/* Navigation Arrows */}
-                {totalGroupPages > 1 && (
-                  <>
-                    <Box sx={{ 
-                      position: 'absolute', 
-                      left: -20, 
-                      top: '50%', 
-                      transform: 'translateY(-50%)',
-                      zIndex: 2
-                    }}>
-                      <IconButton 
-                        sx={{ 
-                          bgcolor: '#fff', 
-                          boxShadow: 2,
-                          '&:hover': {
-                            bgcolor: '#f5f5f5',
-                          }
-                        }}
-                        onClick={prevGroupsPage}
-                      >
-                        <ChevronLeftIcon />
-                      </IconButton>
-                    </Box>
-                    <Box sx={{ 
-                      position: 'absolute', 
-                      right: -20, 
-                      top: '50%', 
-                      transform: 'translateY(-50%)',
-                      zIndex: 2
-                    }}>
-                      <IconButton 
-                        sx={{ 
-                          bgcolor: '#fff', 
-                          boxShadow: 2,
-                          '&:hover': {
-                            bgcolor: '#f5f5f5',
-                          }
-                        }}
-                        onClick={nextGroupsPage}
-                      >
-                        <ChevronRightIcon />
-                      </IconButton>
-                    </Box>
-                  </>
-                )}
-                
-                {/* Page indicator */}
-                {totalGroupPages > 1 && (
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    bottom: -30, 
-                    left: '50%', 
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    gap: 1
-                  }}>
-                    {Array.from({ length: totalGroupPages }).map((_, index) => (
-                      <Box 
-                        key={index}
-                        sx={{ 
-                          width: 8, 
-                          height: 8, 
-                          borderRadius: '50%', 
-                          bgcolor: index === groupsPage ? '#915dac' : '#e0e0e0' 
-                        }}
-                      />
-                    ))}
-                  </Box>
-                )}
-              </Grid>
+            {/* Tab system */}
+            <Box sx={{ width: '100%', mb: 3 }}>
+              <Tabs
+                value={activeTab}
+                onChange={(e, newValue) => setActiveTab(newValue)}
+                textColor="primary"
+                indicatorColor="primary"
+                sx={{
+                  '& .MuiTab-root': { 
+                    fontSize: '1rem',
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    color: 'rgba(0, 0, 0, 0.6)'
+                  },
+                  '& .Mui-selected': { 
+                    color: '#915dac',
+                    fontWeight: 600
+                  },
+                  '& .MuiTabs-indicator': { 
+                    backgroundColor: '#915dac',
+                    height: 3
+                  }
+                }}
+              >
+                <Tab label="Home" />
+                <Tab label="Search Users" />
+              </Tabs>
             </Box>
 
-            {/* Find Friends Section */}
-            <Box>
-              <Typography variant="h4" component="h2" sx={{ mb: 3, borderBottom: '1px solid #e0e0e0', pb: 1 }}>
-                Find Friends
-              </Typography>
-              <Grid container spacing={3} sx={{ position: 'relative' }}>
-                {currentFriends.map((friend) => (
-                  <Grid item xs={12} sm={6} md={4} key={friend.recommended_user_id}>
-                    <Card 
-                      sx={{ 
-                        borderRadius: 2, 
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-                        p: 2,
-                        position: 'relative',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-                          transform: 'translateY(-2px)',
-                          transition: 'all 0.2s ease-in-out'
-                        }
-                      }}
-                      onClick={() => handleUserClick(friend.recommended_user_id)}
-                    >
-                      <IconButton
-                        sx={{
-                          position: 'absolute',
-                          top: 8,
-                          right: 8,
-                          color: userFriends.some(f => f.friend_id === friend.recommended_user_id) ? '#4caf50' : 
-                                 friendRequests.some(r => r.sender_id === friend.recommended_user_id) ? '#ff9800' : 
-                                 sentRequests.includes(friend.recommended_user_id) ? '#4caf50' : '#ff6b9b',
-                          '&:hover': {
-                            color: userFriends.some(f => f.friend_id === friend.recommended_user_id) ? '#388e3c' : 
-                                   friendRequests.some(r => r.sender_id === friend.recommended_user_id) ? '#f57c00' : 
-                                   sentRequests.includes(friend.recommended_user_id) ? '#388e3c' : '#e05a89',
-                          }
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (userFriends.some(f => f.friend_id === friend.recommended_user_id)) {
-                            // Already friends - open chat
-                            handleFriendSelect(friend.recommended_user_id);
-                          } else if (!friendRequests.some(r => r.sender_id === friend.recommended_user_id) && 
-                                     !sentRequests.includes(friend.recommended_user_id)) {
-                            // Not friends or request pending - send request
-                            handleAddFriend(friend.recommended_user_id);
-                          }
-                          // If request is pending or already sent, do nothing on click
-                        }}
-                        disabled={addingFriend === friend.recommended_user_id}
-                      >
-                        {addingFriend === friend.recommended_user_id ? (
-                          <CircularProgress size={24} color="inherit" />
-                        ) : userFriends.some(f => f.friend_id === friend.recommended_user_id) ? (
-                          <MessageIcon />
-                        ) : friendRequests.some(r => r.sender_id === friend.recommended_user_id) ? (
-                          <HourglassEmptyIcon />
-                        ) : sentRequests.includes(friend.recommended_user_id) ? (
-                          <Tooltip title="Friend request sent">
-                            <CheckCircleIcon />
-                          </Tooltip>
-                        ) : (
-                          <AddIcon />
-                        )}
-                      </IconButton>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar 
-                          sx={{ 
-                            width: 56, 
-                            height: 56, 
-                            bgcolor: '#ff6b9b',
-                            fontSize: '1.5rem'
-                          }}
-                        >
-                          {friend.recommended_user_name.charAt(0)}
-                        </Avatar>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="h6" component="h3">
-                            {friend.recommended_user_name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {friend.common_interests} common interests
-                          </Typography>
-                          {friendRequests.some(r => r.sender_id === friend.recommended_user_id) && (
-                            <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
-                              Friend request pending
+            {/* Home Tab (Group Chats and Find Friends) */}
+            {activeTab === 0 && (
+              <>
+                <Box sx={{ mb: 6 }}>
+                  <Typography variant="h4" component="h2" sx={{ mb: 3, borderBottom: '1px solid #e0e0e0', pb: 1 }}>
+                    Group Chats
+                  </Typography>
+                  <Grid container spacing={3} sx={{ position: 'relative' }}>
+                    {currentGroups.map((group) => (
+                      <Grid item xs={12} sm={6} md={4} key={group.group_id}>
+                        <Card sx={{ 
+                          borderRadius: 2, 
+                          boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column'
+                        }}>
+                          <CardContent sx={{ flexGrow: 1 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
+                              <Box sx={{ width: 50, height: 50, bgcolor: '#f5f5f5', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                <Typography variant="h6">{group.group_name.charAt(0)}</Typography>
+                              </Box>
+                              <Typography variant="h6" component="h3">
+                                {group.group_name}
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                              Created on {new Date(group.created_at).toLocaleDateString()}
                             </Typography>
-                          )}
-                          {sentRequests.includes(friend.recommended_user_id) && (
-                            <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 0.5 }}>
-                              Waiting for acceptance
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </Card>
-                  </Grid>
-                ))}
-                
-                {/* Navigation Arrows */}
-                {totalFriendPages > 1 && (
-                  <>
-                    <Box sx={{ 
-                      position: 'absolute', 
-                      left: -20, 
-                      top: '50%', 
-                      transform: 'translateY(-50%)',
-                      zIndex: 2
-                    }}>
-                      <IconButton 
-                        sx={{ 
-                          bgcolor: '#fff', 
-                          boxShadow: 2,
-                          '&:hover': {
-                            bgcolor: '#f5f5f5',
-                          }
-                        }}
-                        onClick={prevFriendsPage}
-                      >
-                        <ChevronLeftIcon />
-                      </IconButton>
-                    </Box>
-                    <Box sx={{ 
-                      position: 'absolute', 
-                      right: -20, 
-                      top: '50%', 
-                      transform: 'translateY(-50%)',
-                      zIndex: 2
-                    }}>
-                      <IconButton 
-                        sx={{ 
-                          bgcolor: '#fff', 
-                          boxShadow: 2,
-                          '&:hover': {
-                            bgcolor: '#f5f5f5',
-                          }
-                        }}
-                        onClick={nextFriendsPage}
-                      >
-                        <ChevronRightIcon />
-                      </IconButton>
-                    </Box>
-                  </>
-                )}
-                
-                {/* Page indicator */}
-                {totalFriendPages > 1 && (
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    bottom: -30, 
-                    left: '50%', 
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    gap: 1
-                  }}>
-                    {Array.from({ length: totalFriendPages }).map((_, index) => (
-                      <Box 
-                        key={index}
-                        sx={{ 
-                          width: 8, 
-                          height: 8, 
-                          borderRadius: '50%', 
-                          bgcolor: index === friendsPage ? '#ff6b9b' : '#e0e0e0' 
-                        }}
-                      />
+                            {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Interest ID: {group.interest_id}
+                              </Typography>
+                            </Box> */}
+                          </CardContent>
+                          <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
+                            {userGroups.some(g => g.group_id === group.group_id) ? (
+                              <Button 
+                                variant="contained" 
+                                size="small"
+                                onClick={() => navigate(`/groups/${group.group_id}`)}
+                                sx={{ 
+                                  bgcolor: '#915dac', 
+                                  '&:hover': { bgcolor: '#7d4e95' },
+                                  borderRadius: 20,
+                                  px: 3
+                                }}
+                              >
+                                View Group
+                              </Button>
+                            ) : (
+                              <Button 
+                                variant="contained" 
+                                size="small"
+                                disabled={joiningGroup === group.group_id}
+                                onClick={() => handleJoinGroup(group.group_id)}
+                                sx={{ 
+                                  bgcolor: '#915dac', 
+                                  '&:hover': { bgcolor: '#7d4e95' },
+                                  borderRadius: 20,
+                                  px: 3
+                                }}
+                              >
+                                {joiningGroup === group.group_id ? (
+                                  <CircularProgress size={20} color="inherit" />
+                                ) : (
+                                  'Join Group'
+                                )}
+                              </Button>
+                            )}
+                            <Chip 
+                              label={
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <PeopleIcon sx={{ fontSize: 16 }} />
+                                  {group.member_count}
+                                </Box>
+                              }
+                              size="small" 
+                              sx={{ bgcolor: '#f5f5f5' }}
+                            />
+                          </CardActions>
+                        </Card>
+                      </Grid>
                     ))}
-                  </Box>
-                )}
-              </Grid>
-            </Box>
+                    
+                    {/* Navigation Arrows */}
+                    {totalGroupPages > 1 && (
+                      <>
+                        <Box sx={{ 
+                          position: 'absolute', 
+                          left: -20, 
+                          top: '50%', 
+                          transform: 'translateY(-50%)',
+                          zIndex: 2
+                        }}>
+                          <IconButton 
+                            sx={{ 
+                              bgcolor: '#fff', 
+                              boxShadow: 2,
+                              '&:hover': {
+                                bgcolor: '#f5f5f5',
+                              }
+                            }}
+                            onClick={prevGroupsPage}
+                          >
+                            <ChevronLeftIcon />
+                          </IconButton>
+                        </Box>
+                        <Box sx={{ 
+                          position: 'absolute', 
+                          right: -20, 
+                          top: '50%', 
+                          transform: 'translateY(-50%)',
+                          zIndex: 2
+                        }}>
+                          <IconButton 
+                            sx={{ 
+                              bgcolor: '#fff', 
+                              boxShadow: 2,
+                              '&:hover': {
+                                bgcolor: '#f5f5f5',
+                              }
+                            }}
+                            onClick={nextGroupsPage}
+                          >
+                            <ChevronRightIcon />
+                          </IconButton>
+                        </Box>
+                      </>
+                    )}
+                    
+                    {/* Page indicator */}
+                    {totalGroupPages > 1 && (
+                      <Box sx={{ 
+                        position: 'absolute', 
+                        bottom: -30, 
+                        left: '50%', 
+                        transform: 'translateX(-50%)',
+                        display: 'flex',
+                        gap: 1
+                      }}>
+                        {Array.from({ length: totalGroupPages }).map((_, index) => (
+                          <Box 
+                            key={index}
+                            sx={{ 
+                              width: 8, 
+                              height: 8, 
+                              borderRadius: '50%', 
+                              bgcolor: index === groupsPage ? '#915dac' : '#e0e0e0' 
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </Grid>
+                </Box>
+
+                <Box>
+                  <Typography variant="h4" component="h2" sx={{ mb: 3, borderBottom: '1px solid #e0e0e0', pb: 1 }}>
+                    Find Friends
+                  </Typography>
+                  <Grid container spacing={3} sx={{ position: 'relative' }}>
+                    {currentFriends.map((friend) => (
+                      <Grid item xs={12} sm={6} md={4} key={friend.recommended_user_id}>
+                        <Card 
+                          sx={{ 
+                            borderRadius: 2, 
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                            p: 2,
+                            position: 'relative',
+                            cursor: 'pointer',
+                            '&:hover': {
+                              boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                              transform: 'translateY(-2px)',
+                              transition: 'all 0.2s ease-in-out'
+                            }
+                          }}
+                          onClick={() => handleUserClick(friend.recommended_user_id)}
+                        >
+                          <IconButton
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              color: userFriends.some(f => f.friend_id === friend.recommended_user_id) ? '#4caf50' : 
+                                     friendRequests.some(r => r.sender_id === friend.recommended_user_id) ? '#ff9800' : 
+                                     sentRequests.includes(friend.recommended_user_id) ? '#4caf50' : '#ff6b9b',
+                              '&:hover': {
+                                color: userFriends.some(f => f.friend_id === friend.recommended_user_id) ? '#388e3c' : 
+                                       friendRequests.some(r => r.sender_id === friend.recommended_user_id) ? '#f57c00' : 
+                                       sentRequests.includes(friend.recommended_user_id) ? '#388e3c' : '#e05a89',
+                              }
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (userFriends.some(f => f.friend_id === friend.recommended_user_id)) {
+                                // Already friends - open chat
+                                handleFriendSelect(friend.recommended_user_id);
+                              } else if (!friendRequests.some(r => r.sender_id === friend.recommended_user_id) && 
+                                         !sentRequests.includes(friend.recommended_user_id)) {
+                                // Not friends or request pending - send request
+                                handleAddFriend(friend.recommended_user_id);
+                              }
+                              // If request is pending or already sent, do nothing on click
+                            }}
+                            disabled={addingFriend === friend.recommended_user_id}
+                          >
+                            {addingFriend === friend.recommended_user_id ? (
+                              <CircularProgress size={24} color="inherit" />
+                            ) : userFriends.some(f => f.friend_id === friend.recommended_user_id) ? (
+                              <MessageIcon />
+                            ) : friendRequests.some(r => r.sender_id === friend.recommended_user_id) ? (
+                              <HourglassEmptyIcon />
+                            ) : sentRequests.includes(friend.recommended_user_id) ? (
+                              <Tooltip title="Friend request sent">
+                                <CheckCircleIcon />
+                              </Tooltip>
+                            ) : (
+                              <AddIcon />
+                            )}
+                          </IconButton>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar 
+                              sx={{ 
+                                width: 56, 
+                                height: 56, 
+                                bgcolor: '#ff6b9b',
+                                fontSize: '1.5rem'
+                              }}
+                            >
+                              {friend.recommended_user_name.charAt(0)}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="h6" component="h3">
+                                {friend.recommended_user_name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {friend.common_interests} common interests
+                              </Typography>
+                              {friendRequests.some(r => r.sender_id === friend.recommended_user_id) && (
+                                <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
+                                  Friend request pending
+                                </Typography>
+                              )}
+                              {sentRequests.includes(friend.recommended_user_id) && (
+                                <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 0.5 }}>
+                                  Waiting for acceptance
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </Card>
+                      </Grid>
+                    ))}
+                    
+                    {/* Navigation Arrows */}
+                    {totalFriendPages > 1 && (
+                      <>
+                        <Box sx={{ 
+                          position: 'absolute', 
+                          left: -20, 
+                          top: '50%', 
+                          transform: 'translateY(-50%)',
+                          zIndex: 2
+                        }}>
+                          <IconButton 
+                            sx={{ 
+                              bgcolor: '#fff', 
+                              boxShadow: 2,
+                              '&:hover': {
+                                bgcolor: '#f5f5f5',
+                              }
+                            }}
+                            onClick={prevFriendsPage}
+                          >
+                            <ChevronLeftIcon />
+                          </IconButton>
+                        </Box>
+                        <Box sx={{ 
+                          position: 'absolute', 
+                          right: -20, 
+                          top: '50%', 
+                          transform: 'translateY(-50%)',
+                          zIndex: 2
+                        }}>
+                          <IconButton 
+                            sx={{ 
+                              bgcolor: '#fff', 
+                              boxShadow: 2,
+                              '&:hover': {
+                                bgcolor: '#f5f5f5',
+                              }
+                            }}
+                            onClick={nextFriendsPage}
+                          >
+                            <ChevronRightIcon />
+                          </IconButton>
+                        </Box>
+                      </>
+                    )}
+                    
+                    {/* Page indicator */}
+                    {totalFriendPages > 1 && (
+                      <Box sx={{ 
+                        position: 'absolute', 
+                        bottom: -30, 
+                        left: '50%', 
+                        transform: 'translateX(-50%)',
+                        display: 'flex',
+                        gap: 1
+                      }}>
+                        {Array.from({ length: totalFriendPages }).map((_, index) => (
+                          <Box 
+                            key={index}
+                            sx={{ 
+                              width: 8, 
+                              height: 8, 
+                              borderRadius: '50%', 
+                              bgcolor: index === friendsPage ? '#ff6b9b' : '#e0e0e0' 
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </Grid>
+                </Box>
+              </>
+            )}
+
+            {/* Search Users Tab */}
+            {activeTab === 1 && (
+              <UserSearch 
+                onAddFriend={handleAddFriend}
+                userFriends={userFriends}
+                sentRequests={sentRequests}
+                friendRequests={friendRequests}
+                onSelectFriend={handleFriendSelect}
+              />
+            )}
           </>
         )}
       </Box>

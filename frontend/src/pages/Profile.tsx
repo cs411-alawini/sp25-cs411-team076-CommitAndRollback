@@ -358,12 +358,6 @@ const Profile = () => {
           mt: 1
         }}>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <IconButton size="large">
-              <NotificationsIcon />
-            </IconButton>
-            <IconButton size="large" onClick={() => navigate('/dashboard')}>
-              <HomeIcon />
-            </IconButton>
             <IconButton 
               size="large"
               onClick={handleMenuClick}
