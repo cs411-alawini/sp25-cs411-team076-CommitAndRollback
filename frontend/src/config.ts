@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'http://localhost:5001'; 
+export const API_BASE_URL = 'https://backend-api-285710169580.us-central1.run.app'; 

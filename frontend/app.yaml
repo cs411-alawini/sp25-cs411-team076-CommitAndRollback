@@ -1,0 +1,16 @@
+runtime: nodejs20
+
+handlers:
+  - url: /static
+    static_dir: dist/static
+    secure: always
+
+  - url: /(.*\.(json|ico|js|css|png|jpg|jpeg|gif|svg))$
+    static_files: dist/\1
+    upload: dist/.*\.(json|ico|js|css|png|jpg|jpeg|gif|svg)$
+    secure: always
+
+  - url: /.*
+    static_files: dist/index.html
+    upload: dist/index.html
+    secure: always 
