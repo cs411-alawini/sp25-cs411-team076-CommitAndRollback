@@ -1,0 +1,18 @@
+steps:
+  # Build and deploy frontend
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['install']
+    dir: 'frontend'
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['run', 'build']
+    dir: 'frontend'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args: ['gcloud', 'app', 'deploy', 'frontend/app.yaml', '--quiet']
+  
+  # Deploy backend
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args: ['gcloud', 'app', 'deploy', 'backend/app.yaml', '--quiet']
+  
+  # Deploy dispatch configuration
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args: ['gcloud', 'app', 'deploy', 'dispatch.yaml', '--quiet'] 

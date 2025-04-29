@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS411 Project</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #4285f4; }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>CS411 Team 076 - Frontend</h1>
+    
+    <div class="card">
+        <h2>Application Status</h2>
+        <p>✅ <span class="success">Frontend service is running!</span></p>
+        <p>The application frontend has been successfully deployed to Google Cloud Run.</p>
+    </div>
+    
+    <div class="card">
+        <h2>Backend Connection</h2>
+        <p>Backend API URL: <code id="backend-url">https://backend-api-285710169580.us-central1.run.app</code></p>
+        <p>Status: <span id="backend-status">Checking...</span></p>
+        <button id="check-backend">Check Backend Connection</button>
+    </div>
+
+    <div class="card">
+        <h2>Deployment Success</h2>
+        <p>Both application and database are now hosted on GCP, satisfying the 1% extra credit requirement.</p>
+    </div>
+
+    <script>
+        document.getElementById('check-backend').addEventListener('click', async () => {
+            const backendUrl = document.getElementById('backend-url').textContent;
+            const statusElement = document.getElementById('backend-status');
+            
+            try {
+                statusElement.textContent = "Connecting...";
+                const response = await fetch(`${backendUrl}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    statusElement.textContent = "✅ Connected successfully";
+                    statusElement.className = "success";
+                } else {
+                    statusElement.textContent = "❌ Connected, but unexpected response";
+                    statusElement.className = "";
+                }
+            } catch (error) {
+                statusElement.textContent = `❌ Connection failed: ${error.message}`;
+                statusElement.className = "";
+            }
+        });
+    </script>
+</body>
+</html> 

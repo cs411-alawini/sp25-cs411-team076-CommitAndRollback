@@ -1,180 +1,148 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Chip,
   Box,
-  TextField,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Chip,
+  Grid,
+  IconButton,
   InputAdornment,
-  IconButton
+  Paper,
+  Tab,
+  Tabs,
+  TextField,
+  Typography
 } from '@mui/material';
+import {
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  People
+} from '@mui/icons-material';
 import axios from 'axios';
-import { Group as GroupIcon, Person as PersonIcon, Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
+import GroupRecommendations from '../components/GroupRecommendations';
+import { Group } from '../types';
 import { API_BASE_URL } from '../config';
 
-interface Group {
-  group_id: number;
-  group_name: string;
-  created_at: string;
-  member_count: number;
-  interest_id: number;
-  is_member?: boolean; // Added to indicate if current user is a member
-}
-
-const Groups = () => {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+const Groups: React.FC = () => {
+  const { currentUser } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
+  const [recommendedGroups, setRecommendedGroups] = useState<Group[]>([]);
+  const [activeGroups, setActiveGroups] = useState<Group[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchGroups();
-  }, []);
+    if (currentUser?.id) {
+      fetchGroups();
+    }
+  }, [currentUser?.id]);
 
   const fetchGroups = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/groups`);
-      setGroups(response.data);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-    }
-  };
-
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      fetchGroups();
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      // Get user info from localStorage
-      const userInfo = localStorage.getItem('user');
-      const userId = userInfo ? JSON.parse(userInfo).user_id : null;
-      
-      const response = await axios.get(`${API_BASE_URL}/api/groups/search`, {
-        params: {
-          q: searchTerm,
-          user_id: userId
-        }
-      });
-      setGroups(response.data);
-    } catch (error) {
-      console.error('Error searching groups:', error);
+      const [recommendedResponse, activeResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/users/${currentUser?.id}/recommended-groups`),
+        axios.get(`${API_BASE_URL}/api/users/${currentUser?.id}/active-groups`)
+      ]);
+      setRecommendedGroups(recommendedResponse.data);
+      setActiveGroups(activeResponse.data);
+    } catch (err) {
+      setError('Failed to fetch groups');
+      console.error('Error fetching groups:', err);
     } finally {
-      setIsSearching(false);
+      setIsLoading(false);
     }
   };
 
-  const handleClearSearch = () => {
-    setSearchTerm('');
-    fetchGroups();
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+  const clearSearch = () => {
+    setSearchQuery('');
   };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  const filteredGroups = activeTab === 0 ? recommendedGroups : activeGroups;
 
   return (
-    <div>
-      <Typography variant="h4" gutterBottom>
-        Groups
-      </Typography>
-      
-      {/* Search Bar */}
-      <Box mb={3}>
+    <Box sx={{ p: 3 }}>
+      <Paper sx={{ p: 2, mb: 3 }}>
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="Search for groups..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={handleKeyPress}
+          placeholder="Search groups..."
+          value={searchQuery}
+          onChange={handleSearch}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <SearchIcon />
               </InputAdornment>
             ),
-            endAdornment: searchTerm && (
+            endAdornment: searchQuery && (
               <InputAdornment position="end">
-                <IconButton onClick={handleClearSearch} edge="end">
+                <IconButton onClick={clearSearch} edge="end">
                   <ClearIcon />
                 </IconButton>
               </InputAdornment>
             )
           }}
-          disabled={isSearching}
         />
-        <Box mt={1} display="flex" justifyContent="flex-end">
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={handleSearch}
-            disabled={isSearching}
-          >
-            Search
-          </Button>
-        </Box>
-      </Box>
+      </Paper>
 
-      <Grid container spacing={3}>
-        {groups.length > 0 ? (
-          groups.map((group) => (
-            <Grid item xs={12} sm={6} md={4} key={group.group_id}>
+      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
+        <Tab label="Recommended Groups" />
+        <Tab label="Active Groups" />
+      </Tabs>
+
+      {isLoading ? (
+        <Typography>Loading...</Typography>
+      ) : error ? (
+        <Typography color="error">{error}</Typography>
+      ) : (
+        <Grid container spacing={3}>
+          {filteredGroups.map((group) => (
+            <Grid item xs={12} sm={6} md={4} key={group.id}>
               <Card>
                 <CardContent>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <GroupIcon sx={{ mr: 1 }} />
-                    <Typography variant="h6" component="div">
-                      {group.group_name}
-                    </Typography>
-                  </Box>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <PersonIcon sx={{ mr: 1, fontSize: 'small' }} />
-                    <Typography variant="body2" color="text.secondary">
+                  <Typography variant="h6" gutterBottom>
+                    {group.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    {group.description}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <People fontSize="small" />
+                    <Typography variant="body2">
                       {group.member_count} members
                     </Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Created: {new Date(group.created_at).toLocaleDateString()}
-                  </Typography>
-                  {group.is_member && (
-                    <Box mt={1}>
-                      <Chip 
-                        label="Member" 
-                        color="success" 
-                        size="small" 
-                        variant="outlined"
-                      />
-                    </Box>
-                  )}
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    {group.interests?.map((interest: string) => (
+                      <Chip key={interest} label={interest} size="small" />
+                    ))}
+                  </Box>
                 </CardContent>
                 <CardActions>
-                  <Button size="small">View Details</Button>
-                  {!group.is_member && (
-                    <Button size="small" color="primary">
-                      Join Group
-                    </Button>
-                  )}
+                  <Button size="small" color="primary">
+                    Join Group
+                  </Button>
                 </CardActions>
               </Card>
             </Grid>
-          ))
-        ) : (
-          <Grid item xs={12}>
-            <Typography variant="body1" align="center">
-              No groups found
-            </Typography>
-          </Grid>
-        )}
-      </Grid>
-    </div>
+          ))}
+        </Grid>
+      )}
+    </Box>
   );
 };
 

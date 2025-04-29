@@ -16,13 +16,18 @@ import {
   Grid,
   CircularProgress,
   Alert,
-  Snackbar
+  Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { 
   Send as SendIcon, 
   People as PeopleIcon, 
   Event as EventIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  Summarize as SummarizeIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
@@ -80,6 +85,11 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   
   console.log("GroupView rendered with groupId:", groupId);
   
@@ -262,6 +272,33 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
     }
   };
   
+  const handleSummarize = async () => {
+    if (selectedMessageIndex === null) return;
+    
+    setSummaryLoading(true);
+    setSummaryError(null);
+    
+    try {
+      // Get all messages after the selected one
+      const messagesToSummarize = messages.slice(selectedMessageIndex);
+      const response = await axios.post(`${API_URL}/groups/${groupId}/summarize`, {
+        messages: messagesToSummarize
+      });
+      
+      if (response.data && response.data.summary) {
+        setSummary(response.data.summary);
+        setShowSummaryDialog(true);
+      } else {
+        setSummaryError('Failed to generate summary');
+      }
+    } catch (error: any) {
+      console.error('Error generating summary:', error);
+      setSummaryError(error.response?.data?.error || 'Failed to generate summary');
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+  
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -330,9 +367,23 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
         {/* Message List */}
         <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Paper elevation={0} sx={{ p: 2, mb: 2, borderRadius: 2, height: 'calc(100% - 80px)', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="subtitle1" sx={{ mb: 2, pb: 1, borderBottom: '1px solid #e0e0e0' }}>
-              Messages
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1, borderBottom: '1px solid #e0e0e0' }}>
+              <Typography variant="subtitle1">Messages</Typography>
+              {selectedMessageIndex !== null && (
+                <Button
+                  variant="contained"
+                  startIcon={<SummarizeIcon />}
+                  onClick={handleSummarize}
+                  disabled={summaryLoading}
+                  sx={{ 
+                    bgcolor: '#915dac',
+                    '&:hover': { bgcolor: '#7d4e95' }
+                  }}
+                >
+                  {summaryLoading ? <CircularProgress size={24} color="inherit" /> : 'Summarize'}
+                </Button>
+              )}
+            </Box>
             
             <Box className="message-container">
               <List sx={{ width: '100%' }}>
@@ -341,7 +392,7 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
                     <Typography variant="body1" color="text.secondary">No messages yet. Be the first to send one!</Typography>
                   </Box>
                 ) : (
-                  messages.map((message) => {
+                  messages.map((message, index) => {
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
                     const isCurrentUser = message.sender_id === user.user_id;
                     
@@ -351,8 +402,14 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
                         sx={{ 
                           mb: 1,
                           justifyContent: isCurrentUser ? 'flex-end' : 'flex-start',
-                          alignItems: 'flex-start'
+                          alignItems: 'flex-start',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: 'rgba(145, 93, 172, 0.08)',
+                          },
+                          bgcolor: selectedMessageIndex === index ? 'rgba(145, 93, 172, 0.12)' : 'transparent'
                         }}
+                        onClick={() => setSelectedMessageIndex(index)}
                       >
                         {!isCurrentUser && (
                           <ListItemAvatar>
@@ -491,6 +548,28 @@ const GroupView: React.FC<GroupViewProps> = ({ groupId, onBack }) => {
           </Paper>
         </Grid>
       </Grid>
+      
+      {/* Summary Dialog */}
+      <Dialog 
+        open={showSummaryDialog} 
+        onClose={() => setShowSummaryDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Chat Summary</DialogTitle>
+        <DialogContent>
+          {summaryError ? (
+            <Alert severity="error">{summaryError}</Alert>
+          ) : (
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+              {summary}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowSummaryDialog(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
