@@ -17,7 +17,18 @@ from api.routes import setup_routes
 import os
 
 app = Flask(__name__)
-CORS(app)
+# Update CORS configuration
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://database-systems-uiuc.uc.r.appspot.com",
+            "http://localhost:5173",  # For local development
+            "https://backend-api-285710169580.us-central1.run.app"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # Set up routes
 setup_routes(app)
