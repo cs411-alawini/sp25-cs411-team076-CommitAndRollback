@@ -6,4 +6,5 @@ pymysql==1.0.2
 cloud-sql-python-connector==1.0.0
 google-auth==2.3.0
 gunicorn==20.1.0
-mysql-connector-python==8.0.33 
+mysql-connector-python==8.0.33
+google-generativeai==0.3.2 
