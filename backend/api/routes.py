@@ -4,7 +4,8 @@ from db.user_operations import (
     create_user, get_friend_recommendations, get_user_details, update_user_details, 
     get_user_friends, create_friendship, create_friend_request, 
     get_pending_friend_requests, update_friend_request, get_sent_friend_requests,
-    search_users, get_all_interests, delete_user_account
+    search_users, get_all_interests, delete_user_account, get_recommended_groups,
+    get_active_groups
 )
 from db.group_operations import (
     get_all_groups, get_group_recommendations, get_user_groups, add_user_to_group,
@@ -12,8 +13,13 @@ from db.group_operations import (
 )
 from db.chat_operations import send_message, get_chat_messages, get_group_messages, send_group_message
 from db.connection import get_connection
+from .advanced_queries import advanced_queries_bp
+import mysql.connector
 
 def setup_routes(app):
+    # Register the advanced queries blueprint
+    app.register_blueprint(advanced_queries_bp, url_prefix='/api')
+
     # Root route
     @app.route('/')
     def index():
@@ -25,7 +31,8 @@ def setup_routes(app):
                 "user_recommendations": "/api/users/<user_id>/recommendations",
                 "groups": "/api/groups",
                 "group_search": "/api/groups/search",
-                "group_recommendations": "/api/users/<user_id>/group-recommendations",
+                "recommended_groups": "/api/users/<user_id>/recommended-groups",
+                "active_groups": "/api/active-groups",
                 "friend_recommendations": "/api/users/<user_id>/friend-recommendations",
                 "login": "/api/login",
                 "signup": "/api/signup",
@@ -43,7 +50,8 @@ def setup_routes(app):
                 "group_members": "/api/groups/<group_id>/members",
                 "group_events": "/api/groups/<group_id>/events",
                 "remove_user_from_group": "/api/groups/<group_id>/remove-user",
-                "user_search": "/api/users/search"
+                "user_search": "/api/users/search",
+                "interests": "/api/interests"
             }
         })
 
@@ -480,4 +488,29 @@ def setup_routes(app):
         result = delete_user_account(user_id)
         if "error" in result:
             return jsonify(result), 400
-        return jsonify(result), 200 
+        return jsonify(result), 200
+
+    @app.route('/api/users/<int:user_id>/recommended-groups', methods=['GET'])
+    def user_recommended_groups(user_id):
+        groups = get_recommended_groups(user_id)
+        if groups is None:
+            return jsonify({"error": "Failed to fetch recommended groups"}), 500
+        return jsonify(groups)
+
+    @app.route('/api/active-groups', methods=['GET'])
+    def active_groups():
+        groups = get_active_groups()
+        if groups is None:
+            return jsonify({"error": "Failed to fetch active groups"}), 500
+        return jsonify(groups)
+
+    # Remove the old active-groups route since it's now under users
+    # @app.route('/api/active-groups', methods=['GET'])
+    # def active_groups():
+    #     groups = get_active_groups()
+    #     if groups is None:
+    #         return jsonify({"error": "Failed to fetch active groups"}), 500
+    #     return jsonify(groups)
+
+    # Remove the duplicate routes for recommended-groups and active-groups
+    # since they are now handled by the advanced_queries blueprint 

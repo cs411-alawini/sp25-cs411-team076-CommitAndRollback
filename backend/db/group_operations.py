@@ -429,4 +429,58 @@ def search_groups(search_term, limit=None, current_user_id=None):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def get_group_by_id(group_id):
+    """
+    Get a group by its ID.
+    
+    Args:
+        group_id (int): The ID of the group
+        
+    Returns:
+        dict: A dictionary containing the group's information if found, None otherwise
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        # Get group details
+        cursor.execute("""
+            SELECT 
+                g.group_id,
+                g.group_name,
+                g.created_at,
+                g.created_by,
+                g.interest_id,
+                g.chat_id,
+                COUNT(gm.user_id) as member_count
+            FROM 
+                `Group` g
+            LEFT JOIN 
+                Group_Members gm ON g.group_id = gm.group_id
+            WHERE 
+                g.group_id = %s
+            GROUP BY 
+                g.group_id
+        """, (group_id,))
+        
+        group = cursor.fetchone()
+        
+        if group and group['created_at']:
+            group['created_at'] = group['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+            
+        return group
+    except Exception as e:
+        print(f"Error in get_group_by_id: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 

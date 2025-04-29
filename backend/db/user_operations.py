@@ -964,4 +964,142 @@ def delete_user_account(user_id):
         if cursor:
             cursor.close()
         if connection:
+            connection.close()
+
+def get_recommended_groups(user_id):
+    """
+    Get recommended groups for a user based on their interests.
+    
+    Args:
+        user_id (int): The ID of the user
+        
+    Returns:
+        list: A list of dictionaries containing recommended groups
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        
+        cursor.execute("""
+            SELECT
+                g.group_id,
+                g.group_name,
+                g.created_at,
+                COUNT(gm.user_id) AS member_count,
+                COUNT(DISTINCT m.message_id) AS message_count,
+                COUNT(DISTINCT e.event_id) AS event_count
+            FROM
+                `Group` g
+                JOIN User_Interests ui ON g.interest_id = ui.interest_id
+                LEFT JOIN Group_Members gm ON g.group_id = gm.group_id
+                LEFT JOIN Messages m ON g.chat_id = m.chat_id
+                LEFT JOIN Event e ON g.group_id = e.group_id
+            WHERE
+                ui.user_id = %s
+                AND g.group_id NOT IN (
+                    SELECT
+                        group_id
+                    FROM
+                        Group_Members
+                    WHERE
+                        user_id = %s
+                )
+            GROUP BY
+                g.group_id,
+                g.group_name,
+                g.created_at
+            ORDER BY
+                member_count DESC,
+                message_count DESC,
+                event_count DESC
+            LIMIT 10
+        """, (user_id, user_id))
+        
+        groups = cursor.fetchall()
+        
+        # Format timestamps
+        for group in groups:
+            if group['created_at']:
+                group['created_at'] = group['created_at'].strftime('%a, %d %b %Y %H:%M:%S GMT')
+                
+        return groups
+    except Exception as e:
+        print(f"Error in get_recommended_groups: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def get_active_groups():
+    """
+    Get the most active groups based on message and event activity.
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        cursor.execute("""
+            SELECT 
+                g.group_id,
+                g.group_name,
+                g.created_at,
+                COUNT(DISTINCT m.message_id) as message_count,
+                COUNT(DISTINCT e.event_id) as event_count
+            FROM `Group` g
+            LEFT JOIN Messages m ON g.chat_id = m.chat_id
+            LEFT JOIN Event e ON g.group_id = e.group_id
+            GROUP BY g.group_id
+            ORDER BY (message_count + event_count) DESC
+            LIMIT 10
+        """)
+        groups = cursor.fetchall()
+        return groups
+    except Exception as e:
+        print(f"Error getting active groups: {e}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def get_user_by_username(username):
+    """
+    Get a user by their username.
+    
+    Args:
+        username (str): The username to search for
+        
+    Returns:
+        dict: A dictionary containing the user's information if found, None otherwise
+    """
+    connection = None
+    cursor = None
+    try:
+        connection = get_connection()
+        if not connection:
+            return None
+            
+        cursor = connection.cursor(DictCursor)
+        cursor.execute("SELECT user_id, full_name, gender, age, location, bio FROM User WHERE full_name = %s", (username,))
+        user = cursor.fetchone()
+        return user
+    except Exception as e:
+        print(f"Error in get_user_by_username: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
             connection.close() 
