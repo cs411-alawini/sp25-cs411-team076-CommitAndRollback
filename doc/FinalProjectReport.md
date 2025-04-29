@@ -450,7 +450,7 @@ Team collaboration was smooth and well-coordinated. We used GitHub for version c
 
 ### 11. Extra Credit Options
 #### 🌐 Hosting
-We have successfully hosted both the application and the database on Google Cloud Platform (GCP), accessible at: **[https://commitandrollback.live](https://commitandrollback.live)**.
+We have successfully hosted both the application and the database on Google Cloud Platform (GCP), accessible at: https://database-systems-uiuc.uc.r.appspot.com/.
 
 #### 🎨 Creative Component: AI Summarization of Messages
 **TL;DR of Unread Messages**: For the creative feature, we developed an **AI-based message summarization system** as mentioned in an early stage of the report. To enhance user experience, when a person is in a group with many unread messages, we will provide an interactive "TL;DR" feature. Using our backend database and external LLM APIs (for text summarization), users can request a summary of unread messages. This not only helps them catch up quickly but also makes the process interactive, where users can ask for a summary whenever needed, improving efficiency. This addresses the challenge of navigating large volumes of messages in chat groups, improving user experience through data summarization. It's technically challenging because it requires data processing, summarization using LLMs, and interactive UI components.
