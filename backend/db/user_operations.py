@@ -985,6 +985,10 @@ def get_recommended_groups(user_id):
             
         cursor = connection.cursor(DictCursor)
         
+        # Start transaction with READ COMMITTED isolation level
+        cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+        connection.start_transaction()
+        
         cursor.execute("""
             SELECT
                 g.group_id,
@@ -1026,10 +1030,14 @@ def get_recommended_groups(user_id):
         for group in groups:
             if group['created_at']:
                 group['created_at'] = group['created_at'].strftime('%a, %d %b %Y %H:%M:%S GMT')
-                
+        
+        # Commit the transaction
+        connection.commit()
         return groups
     except Exception as e:
         print(f"Error in get_recommended_groups: {str(e)}")
+        if connection:
+            connection.rollback()
         return None
     finally:
         if cursor:
@@ -1049,6 +1057,11 @@ def get_active_groups():
             return None
             
         cursor = connection.cursor(DictCursor)
+        
+        # Start transaction with READ COMMITTED isolation level
+        cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+        connection.start_transaction()
+        
         cursor.execute("""
             SELECT 
                 g.group_id,
@@ -1064,9 +1077,14 @@ def get_active_groups():
             LIMIT 10
         """)
         groups = cursor.fetchall()
+        
+        # Commit the transaction
+        connection.commit()
         return groups
     except Exception as e:
         print(f"Error getting active groups: {e}")
+        if connection:
+            connection.rollback()
         return None
     finally:
         if cursor:
