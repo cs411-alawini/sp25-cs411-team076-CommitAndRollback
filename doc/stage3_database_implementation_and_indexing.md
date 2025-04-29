@@ -98,7 +98,7 @@ CREATE TABLE Event (
 
 
 ## Data in the tables 
-<img width="433" alt="Screenshot 2025-03-19 at 9 09 10 PM" src="https://github.com/user-attachments/assets/86df5e2c-a0b6-4d6d-9455-a60189ca7efe" />
+<img width="433" alt="Screenshot 2025-03-19 at 9 09 10 PM" src="https://github.com/user-attachments/assets/86df5e2c-a0b6-4d6d-9455-a60189ca7efe" />
 
 
 ## Advanced Queries 
@@ -132,13 +132,13 @@ ORDER BY
 LIMIT
   15;
 ```
-<img width="696" alt="Screenshot 2025-03-19 at 9 24 22 PM" src="https://github.com/user-attachments/assets/3c0a6bda-e451-4ddf-b3ca-b36c9a254589" />
+<img width="696" alt="Screenshot 2025-03-19 at 9 24 22 PM" src="https://github.com/user-attachments/assets/3c0a6bda-e451-4ddf-b3ca-b36c9a254589" />
 
 ### Key Functionalities in the Query
 
 #### JOINs
 - `JOIN User_Interests ui ON g.interest_id = ui.interest_id`  
-  - Matches groups with the user’s interests.
+  - Matches groups with the user's interests.
 - `LEFT JOIN Group_Members gm ON g.group_id = gm.group_id`  
   - Allows counting members while keeping groups with zero members.
 
@@ -196,8 +196,8 @@ ORDER BY
 LIMIT
   15;
 ```
-<img width="696" alt="Screenshot 2025-03-19 at 9 26 50 PM" src="https://github.com/user-attachments/assets/6ca29d12-f340-4cb8-97ce-1ee2f1acafbd" />
-<img width="696" alt="Screenshot 2025-03-19 at 9 27 10 PM" src="https://github.com/user-attachments/assets/0a5353a2-9494-4c2c-ae7f-71da8343c976" />
+<img width="696" alt="Screenshot 2025-03-19 at 9 26 50 PM" src="https://github.com/user-attachments/assets/6ca29d12-f340-4cb8-97ce-1ee2f1acafbd" />
+<img width="696" alt="Screenshot 2025-03-19 at 9 27 10 PM" src="https://github.com/user-attachments/assets/0a5353a2-9494-4c2c-ae7f-71da8343c976" />
 
 ### Key Functionalities in the Query
 
@@ -252,7 +252,7 @@ ORDER BY
 LIMIT
   15;
 ```
-<img width="692" alt="Screenshot 2025-03-19 at 9 54 21 PM" src="https://github.com/user-attachments/assets/3e1d19d2-283f-469a-bfb5-c3bd71035890" />
+<img width="692" alt="Screenshot 2025-03-19 at 9 54 21 PM" src="https://github.com/user-attachments/assets/3e1d19d2-283f-469a-bfb5-c3bd71035890" />
 
 
 ### Key Functionalities in the Query
@@ -308,9 +308,9 @@ ORDER BY
 LIMIT  15;
 ```
 
-<img width="1469" alt="Screenshot 2025-03-19 at 9 33 09 PM" src="https://github.com/user-attachments/assets/7d719fe3-00a7-4c76-af9c-ce1f62eb7936" />
-<img width="1469" alt="Screenshot 2025-03-19 at 9 33 48 PM" src="https://github.com/user-attachments/assets/e4ea32e2-b5aa-4314-ad2a-fc53b228f83e" />
-<img width="1469" alt="Screenshot 2025-03-19 at 9 34 00 PM" src="https://github.com/user-attachments/assets/fd953fba-c521-4d5b-bbfe-668d2539b8ef" />
+<img width="1469" alt="Screenshot 2025-03-19 at 9 33 09 PM" src="https://github.com/user-attachments/assets/7d719fe3-00a7-4c76-af9c-ce1f62eb7936" />
+<img width="1469" alt="Screenshot 2025-03-19 at 9 33 48 PM" src="https://github.com/user-attachments/assets/e4ea32e2-b5aa-4314-ad2a-fc53b228f83e" />
+<img width="1469" alt="Screenshot 2025-03-19 at 9 34 00 PM" src="https://github.com/user-attachments/assets/fd953fba-c521-4d5b-bbfe-668d2539b8ef" />
 
 ### Key Functionalities in the Query
 
@@ -383,58 +383,10 @@ LIMIT
 
 ### Indexes Tested
 
-#### 1. Index on Group_Members(group_id, user_id)
-*SQL:*
-```sql
-CREATE INDEX idx_group_members_group_user ON Group_Members(group_id, user_id);
-```
-*Performance Metrics:*
-- *Before Indexing:* Cost = *52.7*
-- *After Indexing:* Cost = *72.3* (Increase)
-
-*Reason for Performance Degradation:*
-- The query planner opted for a less efficient execution plan with the new index
-- The composite index didn't speed up the filtering process from the NOT IN clause
-- The overhead from maintaining and scanning the new index outweighed the performance benefits
-
-![Query 1 After Group](https://github.com/user-attachments/assets/6152a4f3-cf5d-4f12-90e7-d224da86e947)
-
-#### 2. Index on Group(group_id)
-*SQL:*
-```sql
-CREATE INDEX idx_group_group_id ON Group(group_id);
-```
-*Performance Metrics:*
-- *Before Indexing:* Cost = *52.7*
-- *After Indexing:* Cost = *52.7* (No change)
-
-*Reason for No Impact:*
-- The query wasn't bottlenecked by the join on group_id
-- The Group table is likely small and already scanned efficiently
-- The query plan didn't involve significant operations that could be improved by this index
-
-![Query 1 After Group id](https://github.com/user-attachments/assets/0e5bf61f-4dd1-47fe-bfc8-2de2d096f0d7)
-
-
-#### 3. Index on User_Interests(user_id, interest_id)
-*SQL:*
-```sql
-CREATE INDEX idx_user_interests_user_interest ON User_Interests(user_id, interest_id);
-```
-*Performance Metrics:*
-- *Before Indexing:* Cost = *52.7*
-- *After Indexing:* Cost = *44.9* (Decrease)
-
-*Reason for Performance Improvement:*
-- The index directly addressed the bottleneck in join and filtering conditions
-- The database could quickly locate rows for the user_id = 1 condition
-- The intermediate result set size was reduced, improving execution time
-- The query planner used the index for both filtering and join operations
-
-![Query 1 After UserInterest](https://github.com/user-attachments/assets/6b5dfc47-42d9-4a35-ae87-b1985e129a3d)
+No scope for improvement found; primary key indexing is already optimal for this query.
 
 ### Query 1 Conclusion
-The index on User_Interests(user_id, interest_id) provided the best performance improvement, reducing query cost by approximately 15%. The index on Group_Members degraded performance, while the index on Group had no impact.
+No additional indexes were created, as the primary key indexing is already optimal for this query.
 
 ---
 
@@ -481,41 +433,7 @@ LIMIT
 
 ### Indexes Tested
 
-#### 1. Index on User_Interests(user_id, interest_id)
-*SQL:*
-```sql
-CREATE INDEX idx_user_interests_userid_interestid ON User_Interests(user_id, interest_id);
-```
-*Performance Metrics:*
-- *Before Indexing:* Nested loop inner join (cost=49567, rows=75714) (actual time=16.2..1214, rows=92720, loops=1)
-- *After Indexing:* Nested loop inner join (cost=54546, rows=75714) (actual time=36.1..1823, rows=92720, loops=1)
-
-*Reason for Performance Degradation:*
-- The optimizer selected a different execution plan, increasing total execution cost
-- The nested loop join did not benefit as expected due to data distribution
-- Index maintenance overhead increased without significantly reducing scanned rows
-
-![Query 2 After User_interests](https://github.com/user-attachments/assets/96b003f3-52b8-44ca-b5d9-076642f059c0)
-
-
-#### 2. Index on Friendships(user1_id, user2_id)
-*SQL:*
-```sql
-CREATE INDEX idx_friendships_user1_user2 ON Friendships(user1_id, user2_id);
-```
-*Performance Metrics:*
-- *Before Indexing:* Cost = *337498*
-- *After Indexing:* Cost = *170689* (Significant improvement)
-
-*Reason for Performance Improvement:*
-- The hash antijoin operation on f.user1_id IS NULL became more efficient
-- The index helped in faster deduplication of existing friendships
-- The optimizer leveraged the hash join strategy, reducing expensive full table scans
-
-![Query 2 After Friendship+Userid](https://github.com/user-attachments/assets/a584a477-a482-4d9f-a174-d9e6afdb3f2a)
-
-
-#### 3. Index on User(age)
+#### 1. Index on User(age)
 *SQL:*
 ```sql
 CREATE INDEX idx_user_age ON User(age);
@@ -537,7 +455,7 @@ CREATE INDEX idx_user_age ON User(age);
 
 
 ### Query 2 Conclusion
-The combination of Friendships(user1_id, user2_id) and User(age) indexes provides the best performance improvements. The index on User_Interests(user_id, interest_id) was not beneficial and should be omitted to avoid unnecessary overhead.
+The index on User(age) provides the best performance improvement for this query.
 
 ---
 
@@ -606,24 +524,7 @@ CREATE INDEX idx_messages_chat_sent ON Messages(chat_id, sent_at);
  
 ![Query 3 After JOIN ](https://github.com/user-attachments/assets/7947821e-0e16-474e-aa6b-0fafa985c08f)
 
-#### 3. Index on Group_Members(group_id)
-*SQL:*
-```sql
-CREATE INDEX idx_group_members_group ON Group_Members(group_id);
-```
-*Performance Metrics:*
-- *Before Indexing:* Cost = *72.5*
-- *After Indexing:* Cost = *100* (Degradation)
-
-*Reason for Performance Degradation:*
-- The query planner chose a suboptimal plan after the index was added
-- Additional index overhead in maintenance during the join negated performance gains
-- The join involving Group_Members was not the primary bottleneck
-
-![Query 3 After Group_Members lookup ](https://github.com/user-attachments/assets/38986553-b9f9-461a-99cb-9258cd68c822)
-
-
-#### 4. Index on Event(group_id)
+#### 3. Index on Event(group_id)
 *SQL:*
 ```sql
 CREATE INDEX idx_event_group ON Event(group_id);
@@ -704,23 +605,7 @@ CREATE INDEX idx_group_interest_group ON `Group`(interest_id, group_id);
   
 ![Query 4 After interest_group](https://github.com/user-attachments/assets/e4d0d8a4-7e34-49ae-9a59-d5b57f87ec9f)
 
-#### 2. Index on User_Interests(interest_id, user_id)
-*SQL:*
-```sql
-CREATE INDEX idx_user_interests_interest_user ON User_Interests(interest_id, user_id);
-```
-*Performance Metrics:*
-- *Before Indexing:* Cost = *380547*
-- *After Indexing:* Cost = *418448* (Degradation)
-
-*Reason for Performance Degradation:*
-- The query planner opted for a less efficient execution plan after the index was introduced
-- The specific query patterns didn't benefit from this index
-- Added overhead without corresponding performance benefits
-
-![Query 4 After interest_group](https://github.com/user-attachments/assets/6690bdfa-9837-4e30-9e13-ac8e31e7d112)
-
-#### 3. Index on Interests(interest_id, interest_name)
+#### 2. Index on Interests(interest_id, interest_name)
 *SQL:*
 ```sql
 CREATE INDEX idx_interests_id_name ON Interests(interest_id, interest_name);
@@ -737,8 +622,7 @@ CREATE INDEX idx_interests_id_name ON Interests(interest_id, interest_name);
 ![Query 4 After User_Interests](https://github.com/user-attachments/assets/af7839f5-e2ea-46cd-a276-629ee181f44a)
 
 ### Query 4 Conclusion
-The index on Interests(interest_id, interest_name) provided the most significant performance improvement with a 12% reduction in query cost. The index on Group(interest_id, group_id) showed minor overall improvements but a substantial boost to lookup speed. The index on User_Interests(interest_id, user_id) was detrimental to performance.
-
+Indexes on Group(interest_id, group_id) and Interests(interest_id, interest_name) provided modest to significant performance improvements for this query.
 
 ### FINAL INDEXING WITH THE BEST SELECTIONS
 
