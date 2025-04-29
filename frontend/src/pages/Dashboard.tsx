@@ -46,25 +46,25 @@ import MessageIcon from '@mui/icons-material/Message';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import GroupsIcon from '@mui/icons-material/Groups';
+import { 
+  People, 
+  Chat, 
+  Event, 
+  Person as PersonIcon 
+} from '@mui/icons-material';
 import axios from 'axios';
 import GroupView from '../components/GroupView';
 import UserSearch from '../components/UserSearch';
 import GroupSearch from '../components/GroupSearch';
+import { useAuth } from '../contexts/AuthContext';
+import { Group, User } from '../types';
+import GroupRecommendations from '../components/GroupRecommendations';
 
 // Get API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // Define types for API responses
-interface Group {
-  chat_id: number;
-  created_at: string;
-  created_by: number;
-  group_id: number;
-  group_name: string;
-  interest_id: number;
-  member_count: number;
-}
-
 interface FriendSuggestion {
   recommended_user_id: number;
   recommended_user_name: string;
@@ -114,9 +114,36 @@ interface FriendRequest {
 
 const ITEMS_PER_PAGE = 3;
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { currentUser } = useAuth();
   const [unreadExpanded, setUnreadExpanded] = useState(true);
   const [groupsPage, setGroupsPage] = useState(0);
   const [friendsPage, setFriendsPage] = useState(0);
@@ -149,6 +176,7 @@ const Dashboard = () => {
   const [sentRequests, setSentRequests] = useState<number[]>([]);
   const [notification, setNotification] = useState<{message: string, type: string} | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [tabValue, setTabValue] = useState(0);
 
   const drawerWidth = 280;
   const collapsedDrawerWidth = 80;
@@ -347,11 +375,11 @@ const Dashboard = () => {
       
       if (response.data && !response.data.error) {
         // Get group details to add to userGroups
-        const joinedGroup = groups.find(g => g.group_id === groupId);
+        const joinedGroup = groups.find(g => g.id === groupId);
         if (joinedGroup) {
           const newUserGroup = {
-            group_id: joinedGroup.group_id,
-            group_name: joinedGroup.group_name
+            group_id: joinedGroup.id,
+            group_name: joinedGroup.name
           };
           setUserGroups([...userGroups, newUserGroup]);
           
@@ -610,6 +638,10 @@ const Dashboard = () => {
         setNotification(null);
       }, 3000);
     }
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
   };
 
   // Show loading state
@@ -1049,6 +1081,7 @@ const Dashboard = () => {
                 }}
               >
                 <Tab label="Home" />
+                <Tab label="Explore Groups" />
                 <Tab label="Search Users" />
                 <Tab label="Search Groups" />
               </Tabs>
@@ -1072,22 +1105,23 @@ const Dashboard = () => {
                           flexDirection: 'column'
                         }}>
                           <CardContent sx={{ flexGrow: 1 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                              <Box sx={{ width: 50, height: 50, bgcolor: '#f5f5f5', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                <Typography variant="h6">{group.group_name.charAt(0)}</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+                              <Box sx={{ width: 50, height: 50, bgcolor: '#f5f5f5', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}>
+                                <Typography variant="h6">{group.group_name ? group.group_name.charAt(0) : '?'}</Typography>
                               </Box>
-                              <Typography variant="h6" component="h3">
-                                {group.group_name}
+                              <Typography variant="h6" component="h3" sx={{ wordBreak: 'break-word' }}>
+                                {group.group_name || 'Unnamed Group'}
                               </Typography>
                             </Box>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                               Created on {new Date(group.created_at).toLocaleDateString()}
                             </Typography>
-                            {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Box display="flex" alignItems="center" mb={1}>
+                              <PersonIcon sx={{ mr: 1, fontSize: 'small' }} />
                               <Typography variant="body2" color="text.secondary">
-                                Interest ID: {group.interest_id}
+                                {group.member_count} members
                               </Typography>
-                            </Box> */}
+                            </Box>
                           </CardContent>
                           <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
                             {userGroups.some(g => g.group_id === group.group_id) ? (
@@ -1124,16 +1158,6 @@ const Dashboard = () => {
                                 )}
                               </Button>
                             )}
-                            <Chip 
-                              label={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                  <PeopleIcon sx={{ fontSize: 16 }} />
-                                  {group.member_count}
-                                </Box>
-                              }
-                              size="small" 
-                              sx={{ bgcolor: '#f5f5f5' }}
-                            />
                           </CardActions>
                         </Card>
                       </Grid>
@@ -1383,8 +1407,98 @@ const Dashboard = () => {
               </>
             )}
 
-            {/* Search Users Tab */}
+            {/* Explore Groups Tab */}
             {activeTab === 1 && (
+              <Box>
+                <Typography variant="h4" gutterBottom>
+                  Explore Groups
+                </Typography>
+                <Paper sx={{ width: '100%', mb: 2 }}>
+                  <Tabs
+                    value={tabValue}
+                    onChange={handleTabChange}
+                    indicatorColor="primary"
+                    textColor="primary"
+                    centered
+                  >
+                    <Tab label="All Groups" />
+                    <Tab label="Recommended Groups" />
+                    <Tab label="Active Groups" />
+                  </Tabs>
+                </Paper>
+
+                <TabPanel value={tabValue} index={0}>
+                  <Grid container spacing={3}>
+                    {groups.map((group) => (
+                      <Grid item xs={12} sm={6} md={4} key={group.group_id}>
+                        <Card>
+                          <CardContent>
+                            <Box display="flex" alignItems="center" mb={2}>
+                              <GroupsIcon sx={{ mr: 1 }} />
+                              <Typography variant="h6" component="div">
+                                {group.group_name}
+                              </Typography>
+                            </Box>
+                            <Box display="flex" alignItems="center" mb={1}>
+                              <PersonIcon sx={{ mr: 1, fontSize: 'small' }} />
+                              <Typography variant="body2" color="text.secondary">
+                                {group.member_count} members
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Created: {new Date(group.created_at).toLocaleDateString()}
+                            </Typography>
+                            {group.member_count > 0 && (
+                              <Box mt={1}>
+                                <Chip 
+                                  label="Active" 
+                                  color="success" 
+                                  size="small" 
+                                  variant="outlined"
+                                />
+                              </Box>
+                            )}
+                          </CardContent>
+                          <CardActions>
+                            <Button size="small">View Details</Button>
+                            <Button size="small" color="primary">
+                              Join Group
+                            </Button>
+                          </CardActions>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </TabPanel>
+
+                <TabPanel value={tabValue} index={1}>
+                  {JSON.parse(localStorage.getItem('user') || '{}').user_id ? (
+                    <GroupRecommendations 
+                      userId={JSON.parse(localStorage.getItem('user') || '{}').user_id} 
+                      showRecommendedOnly={true}
+                      groups={groups}
+                      onJoinGroup={handleJoinGroup}
+                    />
+                  ) : (
+                    <Typography variant="body1" align="center">
+                      Please log in to see recommended groups
+                    </Typography>
+                  )}
+                </TabPanel>
+
+                <TabPanel value={tabValue} index={2}>
+                  <GroupRecommendations 
+                    userId={currentUser?.id} 
+                    showActiveOnly={true}
+                    groups={groups}
+                    onJoinGroup={handleJoinGroup}
+                  />
+                </TabPanel>
+              </Box>
+            )}
+
+            {/* Search Users Tab */}
+            {activeTab === 2 && (
               <UserSearch 
                 onAddFriend={handleAddFriend}
                 userFriends={userFriends}
@@ -1395,7 +1509,7 @@ const Dashboard = () => {
             )}
             
             {/* Search Groups Tab */}
-            {activeTab === 2 && (
+            {activeTab === 3 && (
               <GroupSearch 
                 onJoinGroup={handleJoinGroup}
                 userGroups={userGroups}

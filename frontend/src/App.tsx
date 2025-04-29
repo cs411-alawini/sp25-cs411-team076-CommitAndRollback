@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
@@ -22,59 +23,61 @@ const App: React.FC = () => {
   };
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Auth />} />
-        <Route 
-          path="/interests-selection" 
-          element={
-            <ProtectedRoute>
-              <InterestsSelection />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/me" 
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/groups/:groupId" 
-          element={
-            <ProtectedRoute>
-              <GroupPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/friends/:friendId" 
-          element={
-            <ProtectedRoute>
-              <FriendPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/" 
-          element={
-            isAuthenticated() ? 
-              <Navigate to="/dashboard" /> : 
-              <Navigate to="/login" />
-          } 
-        />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Auth />} />
+          <Route 
+            path="/interests-selection" 
+            element={
+              <ProtectedRoute>
+                <InterestsSelection />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/me" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/groups/:groupId" 
+            element={
+              <ProtectedRoute>
+                <GroupPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/friends/:friendId" 
+            element={
+              <ProtectedRoute>
+                <FriendPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/" 
+            element={
+              isAuthenticated() ? 
+                <Navigate to="/dashboard" /> : 
+                <Navigate to="/login" />
+            } 
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
