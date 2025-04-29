@@ -17,24 +17,23 @@ from api.routes import setup_routes
 import os
 
 app = Flask(__name__)
-# Update CORS configuration
+# Update CORS configuration to be more permissive
 CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "https://database-systems-uiuc.uc.r.appspot.com",
-            "http://localhost:5173",  # For local development
-            "https://backend-api-285710169580.us-central1.run.app"
-        ],
+    r"/*": {
+        "origins": "*",  # Allow all origins
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+        "supports_credentials": True
     }
 })
 
 # Set up routes
 setup_routes(app)
 
-@app.route('/api/groups/<int:group_id>/summarize', methods=['POST'])
+@app.route('/api/groups/<int:group_id>/summarize', methods=['POST', 'OPTIONS'])
 def summarize_group_messages(group_id):
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
         data = request.get_json()
         messages = data.get('messages', [])
@@ -48,6 +47,7 @@ def summarize_group_messages(group_id):
         return jsonify({'summary': summary})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 # Add a health check endpoint
 @app.route('/health')
 def health():
