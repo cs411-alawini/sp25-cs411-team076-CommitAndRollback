@@ -1,2 +1,2 @@
 # Gemini API Configuration
-GEMINI_API_KEY = "AIzaSyB8KhFKgPsiyBdFVTcZZHo_odCcJRyXqfs"  # Replace with your Gemini API key
+GEMINI_API_KEY =  # Add your Gemini API key
