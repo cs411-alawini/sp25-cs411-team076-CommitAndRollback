@@ -119,10 +119,184 @@ All core functionalities proposed in our Stage 1 submission were successfully im
 Our application integrates a range of advanced database programming features—including stored procedures, transactions, constraints, and triggers—that directly complement and strengthen the application's functionality, integrity, and real-world usability. These elements are not just backend mechanisms; they are seamlessly tied to frontend actions, ensuring that user interactions are validated and enforced at the database level.
 
 #### ✅ Stored Procedures
-[Insert Abhirup's Procedure here]
+- This procedure recommends new friends for a user based on the number of shared interests and age similarity. It fetches up to 15 potential users who are not already friends and inserts those with more than two common interests into a Friend_Recommendations table. The logic ensures recommendations prioritize strong relevance while maintaining social diversity.
+```
+  DELIMITER $$
+
+  CREATE PROCEDURE RecommendFriends(IN in_user_id INT)
+  BEGIN
+      DECLARE done INT DEFAULT FALSE;
+      DECLARE rec_user_id INT;
+      DECLARE rec_user_name VARCHAR(255);
+      DECLARE common_interests INT;
+      DECLARE age_diff INT;
+
+      -- Cursor for recommended users
+      DECLARE user_cursor CURSOR FOR
+          SELECT
+              ui2.user_id AS recommended_user_id,
+              u2.full_name AS recommended_user_name,
+              COUNT(ui1.interest_id) AS common_interests,
+              ABS(u1.age - u2.age) AS age_difference
+          FROM
+              User_Interests ui1
+              JOIN User_Interests ui2 ON ui1.interest_id = ui2.interest_id
+                AND ui1.user_id <> ui2.user_id
+              JOIN User u1 ON ui1.user_id = u1.user_id
+              JOIN User u2 ON ui2.user_id = u2.user_id
+              LEFT JOIN Friendships f ON (f.user1_id = ui1.user_id AND f.user2_id = ui2.user_id)
+                                      OR (f.user2_id = ui1.user_id AND f.user1_id = ui2.user_id)
+          WHERE
+              ui1.user_id = in_user_id
+              AND f.user1_id IS NULL
+          GROUP BY
+              ui2.user_id, u2.full_name, u1.age, u2.age
+          ORDER BY
+              common_interests DESC, age_difference ASC
+          LIMIT 15;
+
+      DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+      -- Start processing recommended users
+      OPEN user_cursor;
+      read_users: LOOP
+          FETCH user_cursor INTO rec_user_id, rec_user_name, common_interests, age_diff;
+          IF done THEN
+              LEAVE read_users;
+          END IF;
+
+          -- Insert recommendations if common interests > 2
+          IF common_interests > 2 THEN
+              INSERT INTO Friend_Recommendations (user_id, recommended_user_id, reason)
+              VALUES (in_user_id, rec_user_id, CONCAT('Shared ', common_interests, ' interests'));
+          END IF;
+      END LOOP;
+      CLOSE user_cursor;
+
+  END$$
+
+  DELIMITER ;
+```
+
+- This procedure identifies a user's top interests by analyzing group participation, group member counts, and individual user counts tied to each interest. It calculates an "interest weight" to prioritize more active and populated interests. The system fetches up to 15 top interests for a user and suggests only those with significant engagement (weight > 50). Recommendations are inserted into the Interest_Suggestions table for further use. This helps personalize content discovery and promote active communities based on a user's behavior.
+```
+DELIMITER $$
+
+CREATE PROCEDURE RecommendTopInterests(IN in_user_id INT)
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE int_id INT;
+    DECLARE int_name VARCHAR(255);
+    DECLARE group_count INT;
+    DECLARE group_user_count INT;
+    DECLARE individual_user_count INT;
+    DECLARE interest_weight INT;
+
+    -- Cursor for user's top interests
+    DECLARE interest_cursor CURSOR FOR
+        SELECT
+            i.interest_id, i.interest_name,
+            COUNT(DISTINCT g.group_id) AS group_count,
+            COUNT(DISTINCT gm.user_id) AS group_user_count,
+            COUNT(DISTINCT ui.user_id) AS individual_user_count,
+            (COUNT(DISTINCT g.group_id) * 10 + COUNT(DISTINCT gm.user_id) * 5 + COUNT(DISTINCT ui.user_id) * 3) AS interest_weight
+        FROM
+            Interests i
+            LEFT JOIN Group g ON i.interest_id = g.interest_id
+            LEFT JOIN Group_Members gm ON g.group_id = gm.group_id
+            LEFT JOIN User_Interests ui ON i.interest_id = ui.interest_id
+        WHERE
+            ui.user_id = in_user_id
+        GROUP BY
+            i.interest_id, i.interest_name
+        ORDER BY
+            interest_weight DESC
+        LIMIT 15;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    -- Start processing interests
+    OPEN interest_cursor;
+    read_interests: LOOP
+        FETCH interest_cursor INTO int_id, int_name, group_count, group_user_count, individual_user_count, interest_weight;
+        IF done THEN
+            LEAVE read_interests;
+        END IF;
+
+        -- Insert suggestions if interest weight > 50
+        IF interest_weight > 50 THEN
+            INSERT INTO Interest_Suggestions (user_id, interest_id, suggestion_reason)
+            VALUES (in_user_id, int_id, 'Highly active interest');
+        END IF;
+    END LOOP;
+    CLOSE interest_cursor;
+
+END$$
+
+DELIMITER ;
+```
 
 #### ✅ Transactions
-[Insert Abhirup's Transaction here]
+This transaction retrieves two lists: recommended groups based on a user's interests and the most active groups across the platform. It aggregates group membership, message counts, and event activity to rank groups by relevance and engagement. Executing at READ COMMITTED ensures consistent and accurate data snapshots during retrieval.
+
+```
+  -- Set delimiter for multi-statement block
+  DELIMITER $$
+
+  START TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+  -- Query 1: Recommended groups for user based on interests
+  SELECT
+      g.group_id,
+      g.group_name,
+      g.created_at,
+      COUNT(gm.user_id) AS member_count,
+      COUNT(DISTINCT m.message_id) AS message_count,
+      COUNT(DISTINCT e.event_id) AS event_count
+  FROM
+      Group g
+      JOIN User_Interests ui ON g.interest_id = ui.interest_id
+      LEFT JOIN Group_Members gm ON g.group_id = gm.group_id
+      LEFT JOIN Messages m ON g.chat_id = m.chat_id
+      LEFT JOIN Event e ON g.group_id = e.group_id
+  WHERE
+      ui.user_id = ?  -- Replace with actual user_id when executing
+      AND g.group_id NOT IN (
+          SELECT
+              group_id
+          FROM
+              Group_Members
+          WHERE
+              user_id = ?
+      )
+  GROUP BY
+      g.group_id,
+      g.group_name,
+      g.created_at
+  ORDER BY
+      member_count DESC,
+      message_count DESC,
+      event_count DESC
+  LIMIT 10;
+
+  -- Query 2: Active groups based on messages and events
+  SELECT 
+      g.group_id,
+      g.group_name,
+      g.created_at,
+      COUNT(DISTINCT m.message_id) AS message_count,
+      COUNT(DISTINCT e.event_id) AS event_count
+  FROM Group g
+  LEFT JOIN Messages m ON g.chat_id = m.chat_id
+  LEFT JOIN Event e ON g.group_id = e.group_id
+  GROUP BY g.group_id, g.group_name, g.created_at
+  ORDER BY (message_count + event_count) DESC
+  LIMIT 10;
+
+  COMMIT$$
+
+  DELIMITER ;
+```
 
 #### ✅ Constraints
 We enforced several column-level constraints that are validated in real time:
@@ -271,6 +445,22 @@ The final division of labor was equally distributed among all four team members,
 Team collaboration was smooth and well-coordinated. We used GitHub for version control and issue tracking, and held regular meetings to sync on progress and delegate tasks. This balanced and communicative approach allowed us to stay aligned, resolve blockers quickly, and deliver a robust final product on time.
 
 
+---
+
+
+### 11. Extra Credit Options
+#### 🌐 Hosting
+We have successfully hosted both the application and the database on Google Cloud Platform (GCP), accessible at: **[https://commitandrollback.live](https://commitandrollback.live)**.
+
+#### 🎨 Creative Component: AI Summarization of Messages
+**TL;DR of Unread Messages**: For the creative feature, we developed an **AI-based message summarization system** as mentioned in an early stage of the report. To enhance user experience, when a person is in a group with many unread messages, we will provide an interactive "TL;DR" feature. Using our backend database and external LLM APIs (for text summarization), users can request a summary of unread messages. This not only helps them catch up quickly but also makes the process interactive, where users can ask for a summary whenever needed, improving efficiency. This addresses the challenge of navigating large volumes of messages in chat groups, improving user experience through data summarization. It's technically challenging because it requires data processing, summarization using LLMs, and interactive UI components.
+
+
+---
+
+
+### 12. Project Video
+Link: [Enter URL Here]
 
 
 
